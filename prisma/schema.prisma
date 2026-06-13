@@ -1,0 +1,158 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum PerfilUsuario {
+  ADMINISTRADOR
+  ATENDENTE
+}
+
+enum Prioridade {
+  BAIXA
+  MEDIA
+  ALTA
+}
+
+enum StatusChamado {
+  ABERTO
+  EM_ANDAMENTO
+  RESOLVIDO
+  FECHADO
+}
+
+enum OrigemChamado {
+  MANUAL
+  SIMULADOR
+  WHATSAPP
+}
+
+model Usuario {
+  id                   String        @id @default(uuid()) @db.Uuid
+  nome                 String        @db.VarChar(120)
+  email                String        @unique @db.VarChar(160)
+  senhaHash            String        @map("senha_hash")
+  perfil               PerfilUsuario @default(ATENDENTE)
+  ativo                Boolean       @default(true)
+  setorId              String?       @map("setor_id") @db.Uuid
+  ultimaAtribuicao     DateTime?     @map("ultima_atribuicao")
+  criadoEm             DateTime      @default(now()) @map("criado_em")
+  atualizadoEm         DateTime      @updatedAt @map("atualizado_em")
+
+  setor                Setor?        @relation(fields: [setorId], references: [id], onDelete: SetNull)
+  chamadosResponsaveis Chamado[]     @relation("ResponsavelChamado")
+  sessoes              Sessao[]
+
+  @@index([setorId, ativo])
+  @@map("usuarios")
+}
+
+model Sessao {
+  id        String   @id @default(uuid()) @db.Uuid
+  tokenHash String   @unique @map("token_hash")
+  usuarioId String   @map("usuario_id") @db.Uuid
+  expiraEm  DateTime @map("expira_em")
+  criadoEm  DateTime @default(now()) @map("criado_em")
+
+  usuario   Usuario  @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+
+  @@index([usuarioId])
+  @@index([expiraEm])
+  @@map("sessoes")
+}
+
+model Setor {
+  id           String     @id @default(uuid()) @db.Uuid
+  nome         String     @unique @db.VarChar(100)
+  descricao    String?
+  ativo        Boolean    @default(true)
+  ehTriagem    Boolean    @default(false) @map("eh_triagem")
+  criadoEm     DateTime   @default(now()) @map("criado_em")
+  atualizadoEm DateTime   @updatedAt @map("atualizado_em")
+
+  usuarios     Usuario[]
+  chamados     Chamado[]
+  intencoes    Intencao[]
+  conversas    Conversa[]
+
+  @@index([ativo])
+  @@map("setores")
+}
+
+model Intencao {
+  id                 String     @id @default(uuid()) @db.Uuid
+  nome               String     @db.VarChar(120)
+  slug               String     @unique @db.VarChar(140)
+  descricao          String?
+  assuntoSugerido    String     @map("assunto_sugerido") @db.VarChar(160)
+  palavrasChave      String[]   @default([]) @map("palavras_chave")
+  exemplos           String[]   @default([])
+  prioridadeSugerida Prioridade @default(MEDIA) @map("prioridade_sugerida")
+  confiancaMinima    Float      @default(0.55) @map("confianca_minima")
+  ativo              Boolean    @default(true)
+  setorId            String     @map("setor_id") @db.Uuid
+  criadoEm           DateTime   @default(now()) @map("criado_em")
+  atualizadoEm       DateTime   @updatedAt @map("atualizado_em")
+
+  setor              Setor      @relation(fields: [setorId], references: [id], onDelete: Restrict)
+  chamados           Chamado[]
+  conversas          Conversa[]
+
+  @@index([setorId, ativo])
+  @@map("intencoes")
+}
+
+model Chamado {
+  id                String        @id @default(uuid()) @db.Uuid
+  titulo            String        @db.VarChar(160)
+  descricao         String
+  assunto           String?       @db.VarChar(160)
+  prioridade        Prioridade    @default(MEDIA)
+  status            StatusChamado @default(ABERTO)
+  origem            OrigemChamado @default(MANUAL)
+  setorId           String        @map("setor_id") @db.Uuid
+  responsavelId     String?       @map("responsavel_id") @db.Uuid
+  intencaoId        String?       @map("intencao_id") @db.Uuid
+  confiancaIntencao Float?        @map("confianca_intencao")
+  dataAbertura      DateTime      @default(now()) @map("data_abertura")
+  dataAtualizacao   DateTime      @updatedAt @map("data_atualizacao")
+  dataResolucao     DateTime?     @map("data_resolucao")
+  dataFechamento    DateTime?     @map("data_fechamento")
+
+  setor             Setor         @relation(fields: [setorId], references: [id], onDelete: Restrict)
+  responsavel       Usuario?      @relation("ResponsavelChamado", fields: [responsavelId], references: [id], onDelete: SetNull)
+  intencao          Intencao?     @relation(fields: [intencaoId], references: [id], onDelete: SetNull)
+  conversas         Conversa[]
+
+  @@index([status, prioridade])
+  @@index([setorId, status])
+  @@index([responsavelId, status])
+  @@index([dataAbertura])
+  @@map("chamados")
+}
+
+model Conversa {
+  id                   String        @id @default(uuid()) @db.Uuid
+  remetente            String?       @db.VarChar(160)
+  mensagem             String
+  origem               OrigemChamado
+  identificadorExterno String?       @unique @map("identificador_externo") @db.VarChar(200)
+  assuntoIdentificado  String?       @map("assunto_identificado") @db.VarChar(160)
+  confianca            Float?
+  intencaoId           String?       @map("intencao_id") @db.Uuid
+  setorId              String?       @map("setor_id") @db.Uuid
+  chamadoId            String?       @map("chamado_id") @db.Uuid
+  criadoEm             DateTime      @default(now()) @map("criado_em")
+
+  intencao             Intencao?     @relation(fields: [intencaoId], references: [id], onDelete: SetNull)
+  setor                Setor?        @relation(fields: [setorId], references: [id], onDelete: SetNull)
+  chamado              Chamado?      @relation(fields: [chamadoId], references: [id], onDelete: SetNull)
+
+  @@index([origem, criadoEm])
+  @@index([chamadoId])
+  @@map("conversas")
+}
