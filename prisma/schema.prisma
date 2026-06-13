@@ -29,6 +29,7 @@ enum OrigemChamado {
   MANUAL
   SIMULADOR
   WHATSAPP
+  EMAIL
 }
 
 model Usuario {
@@ -91,6 +92,7 @@ model Intencao {
   assuntoSugerido    String     @map("assunto_sugerido") @db.VarChar(160)
   palavrasChave      String[]   @default([]) @map("palavras_chave")
   exemplos           String[]   @default([])
+  canais             String[]   @default(["MANUAL", "SIMULADOR", "WHATSAPP", "EMAIL"])
   prioridadeSugerida Prioridade @default(MEDIA) @map("prioridade_sugerida")
   confiancaMinima    Float      @default(0.55) @map("confianca_minima")
   ativo              Boolean    @default(true)

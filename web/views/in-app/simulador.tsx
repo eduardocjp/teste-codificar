@@ -6,7 +6,7 @@ export function SimuladorView() {
     <section>
       <CabecalhoPagina
         titulo="Simulador"
-        descricao="Teste o Intent Solver usando as intenções ativas do banco, sem criar chamado automaticamente."
+        descricao="Simule a captura de e-mail ou WhatsApp, classifique com o Intent Solver e crie chamados automaticamente sem integrações externas reais."
       />
       <FormularioSimulador />
     </section>

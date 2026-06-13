@@ -105,6 +105,8 @@ const intencoesSeed = [
   },
 ];
 
+const canaisPadraoIntencao = ["MANUAL", "SIMULADOR", "WHATSAPP", "EMAIL"] as const;
+
 async function main(): Promise<void> {
   const setores = new Map<string, string>();
 
@@ -189,6 +191,7 @@ async function main(): Promise<void> {
         assuntoSugerido: intencao.assuntoSugerido,
         palavrasChave: intencao.palavrasChave,
         exemplos: intencao.exemplos,
+        canais: [...canaisPadraoIntencao],
         setorId,
         prioridadeSugerida: intencao.prioridadeSugerida,
         confiancaMinima: intencao.confiancaMinima,
@@ -200,6 +203,7 @@ async function main(): Promise<void> {
         assuntoSugerido: intencao.assuntoSugerido,
         palavrasChave: intencao.palavrasChave,
         exemplos: intencao.exemplos,
+        canais: [...canaisPadraoIntencao],
         setorId,
         prioridadeSugerida: intencao.prioridadeSugerida,
         confiancaMinima: intencao.confiancaMinima,

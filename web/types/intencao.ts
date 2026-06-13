@@ -1,4 +1,4 @@
-import type { PrioridadeValor } from "./dominio";
+import type { OrigemChamadoValor, PrioridadeValor } from "./dominio";
 import type { SetorResumo } from "./setor";
 
 export type IntencaoConfigurada = {
@@ -9,6 +9,7 @@ export type IntencaoConfigurada = {
   assuntoSugerido: string;
   palavrasChave: string[];
   exemplos: string[];
+  canais: OrigemChamadoValor[];
   prioridadeSugerida: PrioridadeValor;
   confiancaMinima: number;
   ativo: boolean;

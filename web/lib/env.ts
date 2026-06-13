@@ -12,6 +12,13 @@ const schemaEnv = z.object({
   EVOLUTION_API_CHAVE: z.string().optional(),
   EVOLUTION_API_INSTANCIA: z.string().optional(),
   EVOLUTION_WEBHOOK_SEGREDO: z.string().optional(),
+  EMAIL_CAPTURA_HABILITADA: z.enum(["true", "false"]).default("false"),
+  EMAIL_ENDERECO_SUPORTE: z.string().optional(),
+  EMAIL_IMAP_HOST: z.string().optional(),
+  EMAIL_IMAP_PORTA: z.string().optional(),
+  EMAIL_IMAP_USUARIO: z.string().optional(),
+  EMAIL_IMAP_SENHA: z.string().optional(),
+  EMAIL_RESPOSTAS_HABILITADAS: z.enum(["true", "false"]).default("false"),
 });
 
 export type EnvAplicacao = z.infer<typeof schemaEnv>;

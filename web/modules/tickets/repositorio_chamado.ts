@@ -3,6 +3,7 @@ import type { Prisma } from "../../../src/generated/prisma/client";
 import { prisma } from "../../lib/prisma";
 import type { DadosCriacaoChamado, DadosFiltroChamado } from "./schema_chamado";
 import type { SessaoUsuario } from "../../types/usuario";
+import type { OrigemChamadoValor } from "../../types/dominio";
 
 export type DadosAtualizacaoChamadoPersistencia = {
   titulo?: string;
@@ -10,7 +11,7 @@ export type DadosAtualizacaoChamadoPersistencia = {
   assunto?: string | null;
   prioridade?: "BAIXA" | "MEDIA" | "ALTA";
   status?: "ABERTO" | "EM_ANDAMENTO" | "RESOLVIDO" | "FECHADO";
-  origem?: "MANUAL" | "SIMULADOR" | "WHATSAPP";
+  origem?: OrigemChamadoValor;
   setorId?: string;
   responsavelId?: string | null;
   intencaoId?: string | null;

@@ -9,6 +9,7 @@ const classes: Record<OrigemChamadoValor, string> = {
   MANUAL: "bg-fog text-graphite",
   SIMULADOR: "bg-graphite text-snow",
   WHATSAPP: "bg-obsidian text-snow",
+  EMAIL: "bg-snow text-obsidian ring-1 ring-graphite",
 };
 
 export function BadgeOrigem({ origem }: BadgeOrigemProps) {

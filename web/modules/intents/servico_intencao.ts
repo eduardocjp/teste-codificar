@@ -1,4 +1,5 @@
 import { mapearErrosZod } from "../../lib/respostas";
+import { ORIGENS_CHAMADO, type OrigemChamadoValor } from "../../types/dominio";
 import type { ResultadoAcao } from "../../types/resultado";
 import type { ResultadoResolucaoIntencao, IntencaoConfigurada } from "../../types/intencao";
 import { obterSetorTriagemObrigatorio } from "../setores/servico_setor";
@@ -11,6 +12,16 @@ import {
 import { schemaAtualizacaoIntencao, schemaCriacaoIntencao, schemaMensagemIntentSolver } from "./schema_intencao";
 import { resolverIntencao } from "./resolver_intencao";
 
+function ehOrigemChamado(valor: string): valor is OrigemChamadoValor {
+  return ORIGENS_CHAMADO.includes(valor as OrigemChamadoValor);
+}
+
+function normalizarCanaisIntencao(canais: string[]): OrigemChamadoValor[] {
+  const canaisValidos = canais.filter(ehOrigemChamado);
+
+  return canaisValidos.length > 0 ? canaisValidos : [...ORIGENS_CHAMADO];
+}
+
 function mapearIntencaoConfigurada(intencao: Awaited<ReturnType<typeof listarIntencoesAtivas>>[number]): IntencaoConfigurada {
   return {
     id: intencao.id,
@@ -20,6 +31,7 @@ function mapearIntencaoConfigurada(intencao: Awaited<ReturnType<typeof listarInt
     assuntoSugerido: intencao.assuntoSugerido,
     palavrasChave: intencao.palavrasChave,
     exemplos: intencao.exemplos,
+    canais: normalizarCanaisIntencao(intencao.canais),
     prioridadeSugerida: intencao.prioridadeSugerida,
     confiancaMinima: intencao.confiancaMinima,
     ativo: intencao.ativo,
@@ -37,8 +49,9 @@ function mapearIntencaoConfigurada(intencao: Awaited<ReturnType<typeof listarInt
  */
 export async function analisarMensagemIntentSolver(
   mensagem: string,
+  origem?: OrigemChamadoValor,
 ): Promise<ResultadoAcao<ResultadoResolucaoIntencao>> {
-  const validacao = schemaMensagemIntentSolver.safeParse({ mensagem });
+  const validacao = schemaMensagemIntentSolver.safeParse({ mensagem, origem });
 
   if (!validacao.success) {
     return {
@@ -53,9 +66,14 @@ export async function analisarMensagemIntentSolver(
     obterSetorTriagemObrigatorio(),
   ]);
 
+  const origemAnalise = validacao.data.origem ?? "MANUAL";
+  const intencoesDoCanal = intencoes
+    .map(mapearIntencaoConfigurada)
+    .filter((intencao) => intencao.canais.includes(origemAnalise));
+
   const resultado = resolverIntencao({
     mensagem: validacao.data.mensagem,
-    intencoes: intencoes.map(mapearIntencaoConfigurada),
+    intencoes: intencoesDoCanal,
     setorTriagem: {
       id: setorTriagem.id,
       nome: setorTriagem.nome,
