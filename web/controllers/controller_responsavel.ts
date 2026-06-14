@@ -2,7 +2,12 @@ import { NextResponse, type NextRequest } from "next/server";
 
 import { validarSessaoAtiva } from "../lib/auth";
 import { lerJsonSeguro } from "../lib/respostas";
-import { criarResponsavel, listarResponsaveis } from "../modules/responsaveis/servico_responsavel";
+import {
+  atualizarResponsavel,
+  criarResponsavel,
+  excluirResponsavel,
+  listarResponsaveis,
+} from "../modules/responsaveis/servico_responsavel";
 import { logError } from "../utils/logger";
 
 /**
@@ -44,5 +49,46 @@ export async function controllerCriarResponsavel(request: NextRequest): Promise<
   } catch (erro) {
     logError("controllerCriarResponsavel", erro);
     return NextResponse.json({ sucesso: false, mensagem: "Não foi possível criar o atendente." }, { status: 500 });
+  }
+}
+
+/**
+ * Atualiza um atendente pela área administrativa.
+ */
+export async function controllerAtualizarResponsavel(request: NextRequest, id: string): Promise<NextResponse> {
+  const sessao = await validarSessaoAtiva(["ADMINISTRADOR"]);
+
+  if (!sessao.sucesso) {
+    return NextResponse.json(sessao, { status: 403 });
+  }
+
+  try {
+    const body = await lerJsonSeguro(request);
+    const resultado = await atualizarResponsavel(id, body);
+
+    return NextResponse.json(resultado, { status: resultado.sucesso ? 200 : 400 });
+  } catch (erro) {
+    logError("controllerAtualizarResponsavel", erro);
+    return NextResponse.json({ sucesso: false, mensagem: "Não foi possível atualizar o atendente." }, { status: 500 });
+  }
+}
+
+/**
+ * Exclui um atendente pela área administrativa.
+ */
+export async function controllerExcluirResponsavel(id: string): Promise<NextResponse> {
+  const sessao = await validarSessaoAtiva(["ADMINISTRADOR"]);
+
+  if (!sessao.sucesso) {
+    return NextResponse.json(sessao, { status: 403 });
+  }
+
+  try {
+    const resultado = await excluirResponsavel(id);
+
+    return NextResponse.json(resultado, { status: resultado.sucesso ? 200 : 400 });
+  } catch (erro) {
+    logError("controllerExcluirResponsavel", erro);
+    return NextResponse.json({ sucesso: false, mensagem: "Não foi possível excluir o atendente." }, { status: 500 });
   }
 }

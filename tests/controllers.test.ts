@@ -18,6 +18,8 @@ const setorMock = vi.hoisted(() => ({
 const responsavelMock = vi.hoisted(() => ({
   listarResponsaveis: vi.fn(),
   criarResponsavel: vi.fn(),
+  atualizarResponsavel: vi.fn(),
+  excluirResponsavel: vi.fn(),
 }));
 
 const intentSolverMock = vi.hoisted(() => ({
@@ -29,6 +31,7 @@ const intentSolverMock = vi.hoisted(() => ({
 
 const intencaoRepoMock = vi.hoisted(() => ({
   desativarIntencao: vi.fn(),
+  excluirIntencao: vi.fn(),
 }));
 
 const chamadoServicoMock = vi.hoisted(() => ({
@@ -73,12 +76,14 @@ import {
 import {
   controllerAtualizarIntencao,
   controllerCriarIntencao,
-  controllerDesativarIntencao,
+  controllerExcluirIntencao,
   controllerListarIntencoes,
 } from "../web/controllers/controller_intencao";
 import { controllerIntentSolver } from "../web/controllers/controller_intent_solver";
 import {
+  controllerAtualizarResponsavel,
   controllerCriarResponsavel,
+  controllerExcluirResponsavel,
   controllerListarResponsaveis,
 } from "../web/controllers/controller_responsavel";
 import { controllerListarSetores } from "../web/controllers/controller_setor";
@@ -196,6 +201,24 @@ describe("controllers de consulta simples", () => {
     expect(response.status).toBe(201);
     expect(authMock.validarSessaoAtiva).toHaveBeenCalledWith(["ADMINISTRADOR"]);
   });
+
+  it("controllerAtualizarResponsavel atualiza atendente", async () => {
+    responsavelMock.atualizarResponsavel.mockResolvedValueOnce({ sucesso: true, dados: { id: "resp" } });
+
+    const response = await controllerAtualizarResponsavel(requestJson({ ativo: false }), "resp");
+
+    expect(response.status).toBe(200);
+    expect(responsavelMock.atualizarResponsavel).toHaveBeenCalledWith("resp", { ativo: false });
+  });
+
+  it("controllerExcluirResponsavel exclui atendente", async () => {
+    responsavelMock.excluirResponsavel.mockResolvedValueOnce({ sucesso: true, dados: { id: "resp" } });
+
+    const response = await controllerExcluirResponsavel("resp");
+
+    expect(response.status).toBe(200);
+    expect(responsavelMock.excluirResponsavel).toHaveBeenCalledWith("resp");
+  });
 });
 
 describe("controllers de intenção e solver", () => {
@@ -233,10 +256,10 @@ describe("controllers de intenção e solver", () => {
     expect(response.status).toBe(400);
   });
 
-  it("controllerDesativarIntencao retorna id desativado", async () => {
-    intencaoRepoMock.desativarIntencao.mockResolvedValueOnce({ id: "intencao" });
+  it("controllerExcluirIntencao retorna id excluído", async () => {
+    intencaoRepoMock.excluirIntencao.mockResolvedValueOnce({ id: "intencao" });
 
-    const response = await controllerDesativarIntencao("intencao");
+    const response = await controllerExcluirIntencao("intencao");
 
     expect(response.status).toBe(200);
     await expect(json(response)).resolves.toMatchObject({ sucesso: true, dados: { id: "intencao" } });

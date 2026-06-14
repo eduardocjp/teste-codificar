@@ -5,7 +5,10 @@ import {
   schemaCriacaoIntencao,
   schemaMensagemIntentSolver,
 } from "../web/modules/intents/schema_intencao";
-import { schemaCriacaoResponsavel } from "../web/modules/responsaveis/schema_responsavel";
+import {
+  schemaAtualizacaoResponsavel,
+  schemaCriacaoResponsavel,
+} from "../web/modules/responsaveis/schema_responsavel";
 import {
   schemaAtualizacaoChamado,
   schemaCriacaoChamado,
@@ -105,5 +108,12 @@ describe("schema de responsável", () => {
         setorId: uuid,
       }).success,
     ).toBe(false);
+  });
+
+  it("schemaAtualizacaoResponsavel aceita senha vazia como ausência de alteração", () => {
+    expect(schemaAtualizacaoResponsavel.parse({ senha: "", ativo: false })).toEqual({
+      senha: undefined,
+      ativo: false,
+    });
   });
 });

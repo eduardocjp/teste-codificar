@@ -26,6 +26,28 @@ export async function listarResponsaveisAtivos(setorId?: string) {
 }
 
 /**
+ * Lista atendentes ativos e inativos para administração.
+ */
+export async function listarAtendentesAdministracao() {
+  return prisma.usuario.findMany({
+    where: {
+      perfil: "ATENDENTE",
+    },
+    include: {
+      setor: true,
+      _count: {
+        select: {
+          chamadosResponsaveis: {
+            where: { status: { in: [...STATUS_CHAMADOS_ATIVOS] } },
+          },
+        },
+      },
+    },
+    orderBy: [{ ativo: "desc" }, { nome: "asc" }],
+  });
+}
+
+/**
  * Busca um atendente por ID para validar atribuição manual.
  */
 export async function buscarResponsavelPorId(id: string) {

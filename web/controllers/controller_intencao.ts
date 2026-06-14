@@ -3,7 +3,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { validarSessaoAtiva } from "../lib/auth";
 import { lerJsonSeguro } from "../lib/respostas";
 import { obterIntencoes, salvarAtualizacaoIntencao, salvarNovaIntencao } from "../modules/intents/servico_intencao";
-import { desativarIntencao } from "../modules/intents/repositorio_intencao";
+import { excluirIntencao } from "../modules/intents/repositorio_intencao";
 import { logError } from "../utils/logger";
 
 /**
@@ -74,9 +74,9 @@ export async function controllerAtualizarIntencao(
 }
 
 /**
- * Desativa intenção preservando histórico.
+ * Exclui intenção configurada preservando chamados existentes.
  */
-export async function controllerDesativarIntencao(id: string): Promise<NextResponse> {
+export async function controllerExcluirIntencao(id: string): Promise<NextResponse> {
   const sessao = await validarSessaoAtiva(["ADMINISTRADOR"]);
 
   if (!sessao.sucesso) {
@@ -84,10 +84,10 @@ export async function controllerDesativarIntencao(id: string): Promise<NextRespo
   }
 
   try {
-    const intencao = await desativarIntencao(id);
+    const intencao = await excluirIntencao(id);
     return NextResponse.json({ sucesso: true, dados: { id: intencao.id } });
   } catch (erro) {
-    logError("controllerDesativarIntencao", erro);
-    return NextResponse.json({ sucesso: false, mensagem: "Não foi possível desativar a intenção." }, { status: 500 });
+    logError("controllerExcluirIntencao", erro);
+    return NextResponse.json({ sucesso: false, mensagem: "Não foi possível excluir a intenção." }, { status: 500 });
   }
 }

@@ -1,7 +1,8 @@
 import { redirect } from "next/navigation";
 
 import { obterSessaoAtual } from "../../../../web/lib/auth";
-import { listarResponsaveis } from "../../../../web/modules/responsaveis/servico_responsavel";
+import { listarAtendentesParaAdministracao } from "../../../../web/modules/responsaveis/servico_responsavel";
+import { obterSetoresParaSelecao } from "../../../../web/modules/setores/servico_setor";
 import { AdminAtendentesView } from "../../../../web/views/in-app/admin/atendentes";
 import { SystemLayout } from "../../../../web/views/layout/system_layout";
 
@@ -18,11 +19,14 @@ export default async function AdminAtendentesPage() {
     redirect("/dashboard");
   }
 
-  const responsaveis = await listarResponsaveis();
+  const [responsaveis, setores] = await Promise.all([
+    listarAtendentesParaAdministracao(),
+    obterSetoresParaSelecao(),
+  ]);
 
   return (
     <SystemLayout sessao={sessao}>
-      <AdminAtendentesView responsaveis={responsaveis} />
+      <AdminAtendentesView responsaveis={responsaveis} setores={setores} />
     </SystemLayout>
   );
 }

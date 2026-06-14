@@ -16,8 +16,8 @@ function ehOrigemChamado(valor: string): valor is OrigemChamadoValor {
   return ORIGENS_CHAMADO.includes(valor as OrigemChamadoValor);
 }
 
-function normalizarCanaisIntencao(canais: string[]): OrigemChamadoValor[] {
-  const canaisValidos = canais.filter(ehOrigemChamado);
+function normalizarCanaisIntencao(canais: string[] | null | undefined): OrigemChamadoValor[] {
+  const canaisValidos = (canais ?? []).filter(ehOrigemChamado);
 
   return canaisValidos.length > 0 ? canaisValidos : [...ORIGENS_CHAMADO];
 }

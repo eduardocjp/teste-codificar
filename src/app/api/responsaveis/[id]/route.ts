@@ -1,9 +1,9 @@
 import type { NextRequest } from "next/server";
 
 import {
-  controllerAtualizarIntencao,
-  controllerExcluirIntencao,
-} from "../../../../../web/controllers/controller_intencao";
+  controllerAtualizarResponsavel,
+  controllerExcluirResponsavel,
+} from "../../../../../web/controllers/controller_responsavel";
 
 export const dynamic = "force-dynamic";
 
@@ -12,17 +12,17 @@ type Params = {
 };
 
 /**
- * PUT /api/intencoes/[id]
+ * PUT /api/responsaveis/[id]
  */
 export async function PUT(request: NextRequest, context: Params) {
   const { id } = await context.params;
-  return controllerAtualizarIntencao(request, id);
+  return controllerAtualizarResponsavel(request, id);
 }
 
 /**
- * DELETE /api/intencoes/[id]
+ * DELETE /api/responsaveis/[id]
  */
 export async function DELETE(_request: NextRequest, context: Params) {
   const { id } = await context.params;
-  return controllerExcluirIntencao(id);
+  return controllerExcluirResponsavel(id);
 }

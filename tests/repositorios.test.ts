@@ -157,6 +157,7 @@ describe("repositorio_intencao", () => {
       assuntoSugerido: "Sem internet",
       palavrasChave: ["internet"],
       exemplos: [],
+      canais: ["MANUAL", "SIMULADOR", "WHATSAPP", "EMAIL"],
       prioridadeSugerida: "MEDIA",
       confiancaMinima: 0.5,
       ativo: true,

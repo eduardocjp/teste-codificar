@@ -25,6 +25,8 @@ const setorTriagem: SetorResumo = {
   ehTriagem: true,
 };
 
+const canaisPadrao = ["MANUAL", "SIMULADOR", "WHATSAPP", "EMAIL"] as const;
+
 const intencoes: IntencaoConfigurada[] = [
   {
     id: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
@@ -34,6 +36,7 @@ const intencoes: IntencaoConfigurada[] = [
     assuntoSugerido: "Computador com defeito ou lentidão",
     palavrasChave: ["computador", "notebook", "travou", "lento"],
     exemplos: ["meu computador travou", "o notebook está muito lento"],
+    canais: [...canaisPadrao],
     prioridadeSugerida: "ALTA",
     confiancaMinima: 0.4,
     ativo: true,
@@ -47,6 +50,7 @@ const intencoes: IntencaoConfigurada[] = [
     assuntoSugerido: "Impressora com defeito",
     palavrasChave: ["impressora", "imprimir", "toner", "papel"],
     exemplos: ["a impressora não está funcionando", "não consigo imprimir"],
+    canais: [...canaisPadrao],
     prioridadeSugerida: "MEDIA",
     confiancaMinima: 0.4,
     ativo: true,
@@ -60,6 +64,7 @@ const intencoes: IntencaoConfigurada[] = [
     assuntoSugerido: "Necessidade de móvel ou equipamento de escritório",
     palavrasChave: ["cadeira", "mesa", "mobiliário"],
     exemplos: ["preciso de uma cadeira nova"],
+    canais: [...canaisPadrao],
     prioridadeSugerida: "BAIXA",
     confiancaMinima: 0.4,
     ativo: true,

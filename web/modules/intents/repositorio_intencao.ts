@@ -41,12 +41,22 @@ export async function atualizarIntencao(id: string, dados: DadosAtualizacaoInten
 }
 
 /**
- * Remove uma intenção da operação sem apagar histórico.
+ * Desativa uma intenção sem apagar o registro.
  */
 export async function desativarIntencao(id: string) {
   return prisma.intencao.update({
     where: { id },
     data: { ativo: false },
+    include: { setor: true },
+  });
+}
+
+/**
+ * Exclui uma intenção configurada, preservando chamados por chaves nulas.
+ */
+export async function excluirIntencao(id: string) {
+  return prisma.intencao.delete({
+    where: { id },
     include: { setor: true },
   });
 }
