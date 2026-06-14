@@ -21,6 +21,11 @@ const schemaEnv = z.object({
   EMAIL_IMAP_USUARIO: z.string().optional(),
   EMAIL_IMAP_SENHA: z.string().optional(),
   EMAIL_RESPOSTAS_HABILITADAS: z.enum(["true", "false"]).default("false"),
+  EMAIL_ENTRADA_HABILITADA: z.enum(["true", "false"]).default("false"),
+  EMAIL_PROVEDOR: z.enum(["postmark"]).default("postmark"),
+  POSTMARK_ENDERECO_ENTRADA_BASE: z.string().optional(),
+  POSTMARK_WEBHOOK_USUARIO: z.string().optional(),
+  POSTMARK_WEBHOOK_SENHA: z.string().optional(),
 });
 
 export type EnvAplicacao = z.infer<typeof schemaEnv>;

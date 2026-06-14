@@ -201,12 +201,6 @@ export function QrCodeConexao({ aberto, onOpenChange, onConectado }: QrCodeConex
               </div>
             </dl>
 
-            {dados?.codigoPareamento ? (
-              <p className="mt-4 rounded-2xl bg-snow px-3 py-2 text-ink ring-1 ring-fog">
-                Código retornado: <strong>{dados.codigoPareamento}</strong>
-              </p>
-            ) : null}
-
             {mensagem ? <p className="mt-4 rounded-2xl bg-snow px-3 py-2 text-ink ring-1 ring-fog">{mensagem}</p> : null}
             {erro ? <p className="mt-4 rounded-2xl bg-red-50 px-3 py-2 text-red-700">{erro}</p> : null}
           </div>
