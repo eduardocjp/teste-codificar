@@ -1,11 +1,14 @@
 import { normalizarTexto } from "../utils/utils";
 
 export const MENSAGEM_PRIMEIRO_CONTATO_PADRAO = [
-  "Descreva seu problema desta forma, em uma única mensagem:",
+  "Copie essa mensagem e responda com ela no corpo.",
   "",
+  "Descreva seu problema desta forma, em uma única mensagem:",
+  "------------",
   "Informe seu nome:",
   "Assunto:",
   "Descrição do problema:",
+  "------------",
 ].join("\n");
 
 export type CampoSolicitacaoWhatsapp = "nome" | "assunto" | "descricao";

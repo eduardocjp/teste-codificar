@@ -44,7 +44,7 @@ export async function controllerObterConfiguracaoWhatsapp(): Promise<NextRespons
 }
 
 /**
- * Atualiza ativação, número de aviso e mensagem de primeiro contato do WhatsApp.
+ * Atualiza ativação, números e mensagens automáticas do WhatsApp.
  */
 export async function controllerSalvarConfiguracaoWhatsapp(request: NextRequest): Promise<NextResponse> {
   const sessao = await validarSessaoAtiva(["ADMINISTRADOR"]);

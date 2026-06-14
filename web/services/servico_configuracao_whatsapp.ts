@@ -14,6 +14,16 @@ const CHAVE_CONFIGURACAO_WHATSAPP = "principal";
 const INTERVALO_QR_MS = 60_000;
 const DURACAO_QR_MS = 30_000;
 
+export const MENSAGEM_CONFIRMACAO_CHAMADO_PADRAO = [
+  "Seu chamado foi criado com sucesso.",
+  "",
+  "Protocolo: {protocolo}",
+  "Assunto: {assunto}",
+  "Setor responsável: {setor}",
+  "",
+  "Aguarde o atendimento da equipe de suporte.",
+].join("\n");
+
 const schemaAtualizacaoConfiguracaoWhatsapp = z.object({
   ativo: z.boolean().optional(),
   numeroAviso: z
@@ -46,6 +56,11 @@ const schemaAtualizacaoConfiguracaoWhatsapp = z.object({
       message: "A mensagem deve conter nome, assunto e descrição.",
     })
     .optional(),
+  mensagemConfirmacaoChamado: z
+    .string()
+    .trim()
+    .min(1, "A mensagem de confirmação do chamado é obrigatória.")
+    .optional(),
 });
 
 export type DadosConfiguracaoWhatsapp = {
@@ -56,6 +71,7 @@ export type DadosConfiguracaoWhatsapp = {
   numeroConectado: string | null;
   numeroAviso: string | null;
   mensagemPrimeiroContato: string;
+  mensagemConfirmacaoChamado: string;
   ultimaSolicitacaoQrEm: Date | null;
   novaTentativaQrEm: Date | null;
   conectadoEm: Date | null;
@@ -95,6 +111,7 @@ function mapearConfiguracao(
     numeroConectado: string | null;
     numeroAviso: string | null;
     mensagemPrimeiroContato: string;
+    mensagemConfirmacaoChamado: string;
     ultimaSolicitacaoQrEm: Date | null;
     novaTentativaQrEm: Date | null;
     conectadoEm: Date | null;
@@ -118,6 +135,7 @@ export async function obterConfiguracaoWhatsapp(): Promise<DadosConfiguracaoWhat
     create: {
       chave: CHAVE_CONFIGURACAO_WHATSAPP,
       mensagemPrimeiroContato: MENSAGEM_PRIMEIRO_CONTATO_PADRAO,
+      mensagemConfirmacaoChamado: MENSAGEM_CONFIRMACAO_CHAMADO_PADRAO,
     },
   });
 
@@ -125,7 +143,7 @@ export async function obterConfiguracaoWhatsapp(): Promise<DadosConfiguracaoWhat
 }
 
 /**
- * Atualiza a automação, número de aviso e mensagem inicial do WhatsApp.
+ * Atualiza a automação, número de aviso e modelos de mensagens do WhatsApp.
  */
 export async function salvarConfiguracaoWhatsapp(dados: unknown): Promise<ResultadoAcao<DadosConfiguracaoWhatsapp>> {
   const validacao = schemaAtualizacaoConfiguracaoWhatsapp.safeParse(dados);
@@ -146,6 +164,7 @@ export async function salvarConfiguracaoWhatsapp(dados: unknown): Promise<Result
       ativo: validacao.data.ativo,
       numeroAviso: validacao.data.numeroAviso,
       mensagemPrimeiroContato: validacao.data.mensagemPrimeiroContato,
+      mensagemConfirmacaoChamado: validacao.data.mensagemConfirmacaoChamado,
     },
   });
 

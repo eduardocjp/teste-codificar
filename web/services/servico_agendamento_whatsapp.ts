@@ -1,6 +1,10 @@
 import { prisma } from "../lib/prisma";
 import type { ResultadoAcao } from "../types/resultado";
 import { logWarn } from "../utils/logger";
+import {
+  MENSAGEM_CONFIRMACAO_CHAMADO_PADRAO,
+  obterConfiguracaoWhatsapp,
+} from "./servico_configuracao_whatsapp";
 import { enviarMensagemEvolution } from "./servico_evolution";
 
 const TEMPO_JANELA_APOS_PROTOCOLO_MS = 10 * 60 * 1000;
@@ -11,20 +15,24 @@ type ResultadoAgendamentoWhatsapp = {
   falhas: number;
 };
 
-function montarMensagemProtocolo(dados: {
+type DadosConfirmacaoWhatsapp = {
   protocolo: string | null;
   assunto: string | null;
   setorNome: string;
-}): string {
-  return [
-    "Seu chamado foi criado com sucesso.",
-    "",
-    `Protocolo: ${dados.protocolo ?? "em processamento"}`,
-    `Assunto: ${dados.assunto ?? "Solicitação geral"}`,
-    `Setor responsável: ${dados.setorNome}`,
-    "",
-    "Aguarde o atendimento da equipe de suporte.",
-  ].join("\n");
+};
+
+/**
+ * Monta a mensagem final enviada ao cliente quando o chamado já possui protocolo.
+ */
+export function montarMensagemConfirmacaoWhatsapp(
+  modelo: string,
+  dados: DadosConfirmacaoWhatsapp,
+): string {
+  return modelo
+    .replaceAll("{protocolo}", dados.protocolo ?? "em processamento")
+    .replaceAll("{assunto}", dados.assunto ?? "Solicitação geral")
+    .replaceAll("{setor}", dados.setorNome)
+    .trim();
 }
 
 /**
@@ -56,6 +64,8 @@ export async function processarAgendamentosWhatsapp(
   });
   let enviados = 0;
   let falhas = 0;
+  const configuracao = sessoes.length > 0 ? await obterConfiguracaoWhatsapp() : null;
+  const modeloConfirmacao = configuracao?.mensagemConfirmacaoChamado ?? MENSAGEM_CONFIRMACAO_CHAMADO_PADRAO;
 
   for (const sessao of sessoes) {
     if (!sessao.chamado) {
@@ -70,7 +80,7 @@ export async function processarAgendamentosWhatsapp(
       continue;
     }
 
-    const conteudo = montarMensagemProtocolo({
+    const conteudo = montarMensagemConfirmacaoWhatsapp(modeloConfirmacao, {
       protocolo: sessao.chamado.protocolo,
       assunto: sessao.chamado.assunto,
       setorNome: sessao.chamado.setor.nome,

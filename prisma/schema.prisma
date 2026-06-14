@@ -180,19 +180,20 @@ model Conversa {
 }
 
 model ConfiguracaoWhatsapp {
-  id                      String    @id @default(uuid()) @db.Uuid
-  chave                   String    @unique @default("principal") @db.VarChar(40)
-  ativo                   Boolean   @default(false)
-  conectado               Boolean   @default(false)
-  numeroConectado         String?   @map("numero_conectado") @db.VarChar(32)
-  numeroAviso             String?   @map("numero_aviso") @db.VarChar(32)
-  mensagemPrimeiroContato String    @map("mensagem_primeiro_contato")
-  ultimaSolicitacaoQrEm   DateTime? @map("ultima_solicitacao_qr_em")
-  novaTentativaQrEm       DateTime? @map("nova_tentativa_qr_em")
-  conectadoEm             DateTime? @map("conectado_em")
-  desconectadoEm          DateTime? @map("desconectado_em")
-  criadoEm                DateTime  @default(now()) @map("criado_em")
-  atualizadoEm            DateTime  @updatedAt @map("atualizado_em")
+  id                         String    @id @default(uuid()) @db.Uuid
+  chave                      String    @unique @default("principal") @db.VarChar(40)
+  ativo                      Boolean   @default(false)
+  conectado                  Boolean   @default(false)
+  numeroConectado            String?   @map("numero_conectado") @db.VarChar(32)
+  numeroAviso                String?   @map("numero_aviso") @db.VarChar(32)
+  mensagemPrimeiroContato    String    @map("mensagem_primeiro_contato")
+  mensagemConfirmacaoChamado String    @map("mensagem_confirmacao_chamado")
+  ultimaSolicitacaoQrEm      DateTime? @map("ultima_solicitacao_qr_em")
+  novaTentativaQrEm          DateTime? @map("nova_tentativa_qr_em")
+  conectadoEm                DateTime? @map("conectado_em")
+  desconectadoEm             DateTime? @map("desconectado_em")
+  criadoEm                   DateTime  @default(now()) @map("criado_em")
+  atualizadoEm               DateTime  @updatedAt @map("atualizado_em")
 
   @@map("configuracoes_whatsapp")
 }

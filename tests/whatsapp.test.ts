@@ -45,6 +45,7 @@ vi.mock("../web/utils/logger", () => ({
 }));
 
 import {
+  MENSAGEM_PRIMEIRO_CONTATO_PADRAO,
   extrairSolicitacaoWhatsapp,
   mensagemPrimeiroContatoValida,
 } from "../web/services/servico_processamento_mensagem";
@@ -54,7 +55,10 @@ import {
   salvarConfiguracaoWhatsapp,
 } from "../web/services/servico_configuracao_whatsapp";
 import { processarWebhookWhatsapp } from "../web/services/servico_atendimento_whatsapp";
-import { processarAgendamentosWhatsapp } from "../web/services/servico_agendamento_whatsapp";
+import {
+  montarMensagemConfirmacaoWhatsapp,
+  processarAgendamentosWhatsapp,
+} from "../web/services/servico_agendamento_whatsapp";
 
 const agora = new Date("2026-06-14T12:00:00.000Z");
 
@@ -67,6 +71,7 @@ function configuracao(overrides: Record<string, unknown> = {}) {
     numeroConectado: "5511888888888",
     numeroAviso: null,
     mensagemPrimeiroContato: "Informe seu nome:\nAssunto:\nDescrição do problema:",
+    mensagemConfirmacaoChamado: "Chamado {protocolo} criado para {assunto} no setor {setor}.",
     ultimaSolicitacaoQrEm: null,
     novaTentativaQrEm: null,
     conectadoEm: null,
@@ -216,6 +221,7 @@ describe("configuração do WhatsApp", () => {
       ativo: false,
       numeroAviso: "(11) 98888-7777",
       mensagemPrimeiroContato: "Informe seu nome:\nAssunto:\nDescrição do problema:",
+      mensagemConfirmacaoChamado: "Protocolo {protocolo} criado.",
     });
 
     expect(prismaMock.configuracaoWhatsapp.update).toHaveBeenCalledWith(
@@ -224,6 +230,7 @@ describe("configuração do WhatsApp", () => {
           ativo: false,
           numeroAviso: "11988887777",
           mensagemPrimeiroContato: "Informe seu nome:\nAssunto:\nDescrição do problema:",
+          mensagemConfirmacaoChamado: "Protocolo {protocolo} criado.",
         }),
       }),
     );
@@ -235,6 +242,12 @@ describe("configuração do WhatsApp", () => {
       sucesso: false,
     });
     expect(mensagemPrimeiroContatoValida("Nome\nAssunto\nDescricao")).toBe(true);
+  });
+
+  it("mantém o modelo padrão copiável para orientar o cliente", () => {
+    expect(MENSAGEM_PRIMEIRO_CONTATO_PADRAO).toContain("Copie essa mensagem");
+    expect(MENSAGEM_PRIMEIRO_CONTATO_PADRAO).toContain("Informe seu nome:");
+    expect(MENSAGEM_PRIMEIRO_CONTATO_PADRAO).toContain("------------");
   });
 
   it("rejeita número opcional inválido", async () => {
@@ -364,6 +377,16 @@ describe("fluxo automático por WhatsApp", () => {
 });
 
 describe("cron WhatsApp", () => {
+  it("monta confirmação usando placeholders configuráveis", () => {
+    expect(
+      montarMensagemConfirmacaoWhatsapp("Chamado {protocolo}: {assunto} / {setor}", {
+        protocolo: "CHA-20260614-A1B2C3",
+        assunto: "Computador não liga",
+        setorNome: "Tecnologia da Informação",
+      }),
+    ).toBe("Chamado CHA-20260614-A1B2C3: Computador não liga / Tecnologia da Informação");
+  });
+
   it("envia protocolo vencido uma única vez e marca sessão", async () => {
     prismaMock.sessaoWhatsapp.findMany.mockResolvedValueOnce([
       {
@@ -383,7 +406,11 @@ describe("cron WhatsApp", () => {
       dados: { processados: 1, enviados: 1, falhas: 0 },
     });
     expect(evolutionMock.enviarMensagemEvolution).toHaveBeenCalledWith(
-      expect.objectContaining({ tipo: "PROTOCOLO", chamadoId: "chamado" }),
+      expect.objectContaining({
+        tipo: "PROTOCOLO",
+        chamadoId: "chamado",
+        conteudo: "Chamado CHA-20260614-A1B2C3 criado para Computador não liga no setor Tecnologia da Informação.",
+      }),
     );
     expect(prismaMock.sessaoWhatsapp.update).toHaveBeenCalledWith(
       expect.objectContaining({
