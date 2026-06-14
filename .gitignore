@@ -14,7 +14,7 @@
 /coverage
 
 # local project documentation
-/docs/
+**/docs/
 
 # next.js
 /.next/
