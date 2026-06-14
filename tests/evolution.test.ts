@@ -1,8 +1,23 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+const prismaMock = vi.hoisted(() => ({
+  configuracaoWhatsapp: {
+    upsert: vi.fn(),
+    update: vi.fn(),
+  },
+  envioAutomaticoWhatsapp: {
+    create: vi.fn(),
+  },
+}));
+
+vi.mock("../web/lib/prisma", () => ({
+  prisma: prismaMock,
+}));
+
 import {
   conectarEvolution,
   desconectarEvolution,
+  enviarMensagemEvolution,
   obterStatusEvolution,
 } from "../web/services/servico_evolution";
 
@@ -15,6 +30,23 @@ function respostaJson(body: unknown, status = 200): Response {
   });
 }
 
+function configuracaoWhatsapp(overrides: Record<string, unknown> = {}) {
+  return {
+    id: "config",
+    chave: "principal",
+    ativo: true,
+    conectado: false,
+    numeroConectado: null,
+    numeroAviso: null,
+    mensagemPrimeiroContato: "Informe seu nome:\nAssunto:\nDescrição do problema:",
+    ultimaSolicitacaoQrEm: null,
+    novaTentativaQrEm: null,
+    conectadoEm: null,
+    desconectadoEm: null,
+    ...overrides,
+  };
+}
+
 beforeEach(() => {
   process.env = {
     ...envOriginal,
@@ -25,6 +57,11 @@ beforeEach(() => {
     EVOLUTION_WEBHOOK_URL: "https://teste-codificar.vercel.app/api/evolution/webhook",
     EVOLUTION_WEBHOOK_SEGREDO: "segredo-teste",
   };
+  prismaMock.configuracaoWhatsapp.upsert.mockResolvedValue(configuracaoWhatsapp());
+  prismaMock.configuracaoWhatsapp.update.mockImplementation(async ({ data }: { data: Record<string, unknown> }) =>
+    configuracaoWhatsapp(data),
+  );
+  prismaMock.envioAutomaticoWhatsapp.create.mockResolvedValue({ id: "envio" });
 });
 
 afterEach(() => {
@@ -116,6 +153,53 @@ describe("servico_evolution", () => {
     expect(fetchMock).toHaveBeenCalledWith(
       "https://evolution.local/instance/delete/teste_cod_01",
       expect.objectContaining({ method: "DELETE" }),
+    );
+  });
+
+  it("conectarEvolution bloqueia segunda tentativa antes de 60 segundos", async () => {
+    const novaTentativaQrEm = new Date(Date.now() + 45_000);
+    prismaMock.configuracaoWhatsapp.upsert.mockResolvedValueOnce(configuracaoWhatsapp({ novaTentativaQrEm }));
+    const fetchMock = vi.fn<typeof fetch>();
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(conectarEvolution()).resolves.toMatchObject({
+      sucesso: true,
+      dados: {
+        bloqueadoPorRateLimit: true,
+        novaTentativaQrEm,
+      },
+    });
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("enviarMensagemEvolution envia texto e registra envio automático", async () => {
+    const fetchMock = vi.fn<typeof fetch>().mockResolvedValueOnce(respostaJson({ key: { id: "msg-1" } }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(
+      enviarMensagemEvolution({
+        destinatario: "55 (11) 99999-9999",
+        conteudo: "Mensagem automática",
+        tipo: "PROTOCOLO",
+        sessaoWhatsappId: "sessao",
+        chamadoId: "chamado",
+      }),
+    ).resolves.toEqual({ sucesso: true, dados: { identificadorExterno: "msg-1" } });
+    expect(fetchMock).toHaveBeenCalledWith(
+      "https://evolution.local/message/sendText/teste_cod_01",
+      expect.objectContaining({
+        method: "POST",
+        body: JSON.stringify({ number: "5511999999999", text: "Mensagem automática" }),
+      }),
+    );
+    expect(prismaMock.envioAutomaticoWhatsapp.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          identificadorExterno: "msg-1",
+          tipo: "PROTOCOLO",
+          destinatario: "5511999999999",
+        }),
+      }),
     );
   });
 

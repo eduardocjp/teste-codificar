@@ -13,6 +13,7 @@ const schemaEnv = z.object({
   EVOLUTION_API_INSTANCIA: z.string().optional(),
   EVOLUTION_WEBHOOK_SEGREDO: z.string().optional(),
   EVOLUTION_WEBHOOK_URL: z.string().optional(),
+  CRON_SECRET: z.string().optional(),
   EMAIL_CAPTURA_HABILITADA: z.enum(["true", "false"]).default("false"),
   EMAIL_ENDERECO_SUPORTE: z.string().optional(),
   EMAIL_IMAP_HOST: z.string().optional(),

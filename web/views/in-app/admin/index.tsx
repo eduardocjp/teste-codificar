@@ -3,7 +3,7 @@ import Link from "next/link";
 import { Button } from "../../ui/button";
 import { CabecalhoPagina } from "../../components/cabecalho_pagina";
 import { ConectarEmail } from "../../components/conectar_email";
-import { QrCodeConexao } from "../../components/qr_code";
+import { WhatsappConfig } from "../../components/whatsapp_config";
 import { UserRoundCog } from "../../../utils/icons";
 
 export function AdminView() {
@@ -36,7 +36,7 @@ export function AdminView() {
             recebimento futuro.
           </p>
           <div className="mt-5 flex flex-col gap-2 sm:flex-row">
-            <QrCodeConexao />
+            <WhatsappConfig />
             <ConectarEmail />
           </div>
         </div>

@@ -4,7 +4,8 @@ import { validarSessaoAtiva } from "../lib/auth";
 import { lerJsonSeguro } from "../lib/respostas";
 import { desconectarEvolution, conectarEvolution, obterStatusEvolution } from "../services/servico_evolution";
 import { obterEnv } from "../lib/env";
-import { logError, logInfo } from "../utils/logger";
+import { processarWebhookWhatsapp } from "../services/servico_atendimento_whatsapp";
+import { logError } from "../utils/logger";
 
 function respostaNaoAutorizada(status = 403): NextResponse {
   return NextResponse.json({ sucesso: false, mensagem: "Você não possui permissão." }, { status });
@@ -92,15 +93,13 @@ export async function controllerWebhookEvolution(request: NextRequest): Promise<
     }
   }
 
-  const body = await lerJsonSeguro(request);
-  const evento = typeof body === "object" && body !== null && "event" in body && typeof body.event === "string"
-    ? body.event
-    : "evento_desconhecido";
+  try {
+    const body = await lerJsonSeguro(request);
+    const resultado = await processarWebhookWhatsapp(body);
 
-  logInfo("controllerWebhookEvolution", { evento });
-
-  return NextResponse.json({
-    sucesso: true,
-    mensagem: "Evento recebido.",
-  });
+    return NextResponse.json(resultado, { status: resultado.sucesso ? 200 : 400 });
+  } catch (erro) {
+    logError("controllerWebhookEvolution", erro);
+    return NextResponse.json({ sucesso: false, mensagem: "Não foi possível processar o webhook." }, { status: 500 });
+  }
 }

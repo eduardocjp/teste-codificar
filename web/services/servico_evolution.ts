@@ -1,5 +1,16 @@
+import { createHash } from "node:crypto";
+
 import { obterEnv } from "../lib/env";
+import { prisma } from "../lib/prisma";
 import type { ResultadoAcao } from "../types/resultado";
+import { logError } from "../utils/logger";
+import {
+  marcarWhatsappConectado,
+  marcarWhatsappDesconectado,
+  obterConfiguracaoWhatsapp,
+  registrarSolicitacaoQrWhatsapp,
+} from "./servico_configuracao_whatsapp";
+import { normalizarTelefoneWhatsapp } from "./servico_processamento_mensagem";
 
 const INSTANCIA_PADRAO = "teste_cod_01";
 const EVENTOS_WEBHOOK = ["MESSAGES_UPSERT", "CONNECTION_UPDATE", "QRCODE_UPDATED"] as const;
@@ -21,6 +32,18 @@ export type DadosConexaoEvolution = {
   codigoPareamento: string | null;
   webhookUrl: string;
   mensagem: string;
+  numeroConectado: string | null;
+  qrExpiraEm: Date | null;
+  novaTentativaQrEm: Date | null;
+  bloqueadoPorRateLimit?: boolean;
+};
+
+export type DadosEnvioMensagemEvolution = {
+  destinatario: string;
+  conteudo: string;
+  tipo: "ORIENTACAO_INICIAL" | "SOLICITACAO_CORRECAO" | "PROTOCOLO" | "AVISO_SUPORTE" | "OUTRA_AUTOMACAO";
+  sessaoWhatsappId?: string;
+  chamadoId?: string;
 };
 
 function isRecord(valor: unknown): valor is Record<string, unknown> {
@@ -82,7 +105,7 @@ function buscarValorPorChave(valor: unknown, chaves: string[]): string | null {
 function extrairEstado(valor: unknown): EstadoEvolution {
   const estado = buscarValorPorChave(valor, ["state", "connectionStatus", "status"]);
 
-  if (estado === "open") {
+  if (estado === "open" || estado === "connected" || estado === "conectada") {
     return "conectada";
   }
 
@@ -103,6 +126,18 @@ function extrairQrCode(valor: unknown): string | null {
 
 function extrairCodigoPareamento(valor: unknown): string | null {
   return buscarValorPorChave(valor, ["pairingCode", "code"]);
+}
+
+function extrairNumeroConectado(valor: unknown): string | null {
+  return normalizarTelefoneWhatsapp(buscarValorPorChave(valor, ["owner", "number", "jid", "remoteJid"]));
+}
+
+function extrairIdentificadorExterno(valor: unknown): string | null {
+  return buscarValorPorChave(valor, ["id", "messageId", "keyId"]);
+}
+
+function gerarHashConteudo(conteudo: string): string {
+  return createHash("sha256").update(conteudo).digest("hex");
 }
 
 function obterConfiguracaoEvolution(): ResultadoAcao<ConfiguracaoEvolution> {
@@ -197,16 +232,22 @@ async function configurarWebhook(configuracao: ConfiguracaoEvolution): Promise<R
   return { sucesso: true, dados: { ok: true } };
 }
 
-async function consultarEstado(configuracao: ConfiguracaoEvolution): Promise<EstadoEvolution> {
+async function consultarEstado(configuracao: ConfiguracaoEvolution): Promise<{
+  estado: EstadoEvolution;
+  numeroConectado: string | null;
+}> {
   const resposta = await chamarEvolution(configuracao, `/instance/connectionState/${configuracao.instanciaNome}`, {
     method: "GET",
   });
 
   if (!resposta.ok) {
-    return "desconectada";
+    return { estado: "desconectada", numeroConectado: null };
   }
 
-  return extrairEstado(resposta.dados);
+  return {
+    estado: extrairEstado(resposta.dados),
+    numeroConectado: extrairNumeroConectado(resposta.dados),
+  };
 }
 
 /**
@@ -219,7 +260,23 @@ export async function obterStatusEvolution(): Promise<ResultadoAcao<DadosConexao
     return configuracao;
   }
 
-  const estado = await consultarEstado(configuracao.dados);
+  const [estadoEvolution, configuracaoWhatsapp] = await Promise.all([
+    consultarEstado(configuracao.dados),
+    obterConfiguracaoWhatsapp(),
+  ]);
+  const { estado } = estadoEvolution;
+
+  const numeroConectado = estado === "conectada"
+    ? estadoEvolution.numeroConectado ?? configuracaoWhatsapp.numeroConectado
+    : null;
+
+  if (estado === "conectada" && !configuracaoWhatsapp.conectado) {
+    await marcarWhatsappConectado(numeroConectado);
+  }
+
+  if (estado !== "conectada" && configuracaoWhatsapp.conectado) {
+    await marcarWhatsappDesconectado();
+  }
 
   return {
     sucesso: true,
@@ -229,6 +286,9 @@ export async function obterStatusEvolution(): Promise<ResultadoAcao<DadosConexao
       qrcodeBase64: null,
       codigoPareamento: null,
       webhookUrl: configuracao.dados.webhookUrl,
+      numeroConectado,
+      qrExpiraEm: null,
+      novaTentativaQrEm: configuracaoWhatsapp.novaTentativaQrEm,
       mensagem: estado === "conectada" ? "WhatsApp conectado." : "Instância pronta para conexão.",
     },
   };
@@ -242,6 +302,26 @@ export async function conectarEvolution(): Promise<ResultadoAcao<DadosConexaoEvo
 
   if (!configuracao.sucesso) {
     return configuracao;
+  }
+
+  const janelaQr = await registrarSolicitacaoQrWhatsapp();
+
+  if (!janelaQr.sucesso) {
+    return {
+      sucesso: true,
+      dados: {
+        instanciaNome: configuracao.dados.instanciaNome,
+        estado: "conectando",
+        qrcodeBase64: null,
+        codigoPareamento: null,
+        webhookUrl: configuracao.dados.webhookUrl,
+        numeroConectado: janelaQr.dados.configuracao.numeroConectado,
+        qrExpiraEm: null,
+        novaTentativaQrEm: janelaQr.dados.novaTentativaQrEm,
+        bloqueadoPorRateLimit: true,
+        mensagem: janelaQr.mensagem,
+      },
+    };
   }
 
   const payloadCriacao = {
@@ -275,6 +355,11 @@ export async function conectarEvolution(): Promise<ResultadoAcao<DadosConexaoEvo
 
   const estado = extrairEstado(respostaQr.dados);
   const qrcodeBase64 = extrairQrCode(respostaQr.dados);
+  const numeroConectado = extrairNumeroConectado(respostaQr.dados);
+
+  if (estado === "conectada") {
+    await marcarWhatsappConectado(numeroConectado);
+  }
 
   return {
     sucesso: true,
@@ -284,6 +369,9 @@ export async function conectarEvolution(): Promise<ResultadoAcao<DadosConexaoEvo
       qrcodeBase64,
       codigoPareamento: extrairCodigoPareamento(respostaQr.dados),
       webhookUrl: configuracao.dados.webhookUrl,
+      numeroConectado,
+      qrExpiraEm: janelaQr.dados.qrExpiraEm,
+      novaTentativaQrEm: janelaQr.dados.novaTentativaQrEm,
       mensagem: qrcodeBase64
         ? "QR Code gerado pela Evolution API."
         : "Instância criada. A Evolution não retornou imagem de QR Code nesta resposta.",
@@ -309,6 +397,8 @@ export async function desconectarEvolution(): Promise<ResultadoAcao<DadosConexao
     return { sucesso: false, mensagem: "Não foi possível excluir a instância na Evolution API." };
   }
 
+  const configuracaoWhatsapp = await marcarWhatsappDesconectado();
+
   return {
     sucesso: true,
     dados: {
@@ -317,7 +407,61 @@ export async function desconectarEvolution(): Promise<ResultadoAcao<DadosConexao
       qrcodeBase64: null,
       codigoPareamento: null,
       webhookUrl: configuracao.dados.webhookUrl,
+      numeroConectado: null,
+      qrExpiraEm: null,
+      novaTentativaQrEm: configuracaoWhatsapp.novaTentativaQrEm,
       mensagem: "Instância excluída da Evolution API.",
     },
   };
+}
+
+/**
+ * Envia mensagem automática pela Evolution API e registra o envio para idempotência.
+ */
+export async function enviarMensagemEvolution(
+  dados: DadosEnvioMensagemEvolution,
+): Promise<ResultadoAcao<{ identificadorExterno: string | null }>> {
+  const configuracao = obterConfiguracaoEvolution();
+
+  if (!configuracao.sucesso) {
+    return configuracao;
+  }
+
+  const destinatario = normalizarTelefoneWhatsapp(dados.destinatario);
+
+  if (!destinatario || dados.conteudo.trim().length === 0) {
+    return { sucesso: false, mensagem: "Mensagem automática inválida." };
+  }
+
+  const resposta = await chamarEvolution(configuracao.dados, `/message/sendText/${configuracao.dados.instanciaNome}`, {
+    method: "POST",
+    body: JSON.stringify({
+      number: destinatario,
+      text: dados.conteudo,
+    }),
+  });
+
+  if (!resposta.ok) {
+    return { sucesso: false, mensagem: "Não foi possível enviar mensagem pela Evolution API." };
+  }
+
+  const identificadorExterno = extrairIdentificadorExterno(resposta.dados);
+
+  try {
+    await prisma.envioAutomaticoWhatsapp.create({
+      data: {
+        identificadorExterno,
+        tipo: dados.tipo,
+        destinatario,
+        conteudoHash: gerarHashConteudo(dados.conteudo),
+        sessaoWhatsappId: dados.sessaoWhatsappId,
+        chamadoId: dados.chamadoId,
+      },
+    });
+  } catch (erro) {
+    logError("enviarMensagemEvolution.registro", erro, { tipo: dados.tipo });
+    return { sucesso: false, mensagem: "Mensagem enviada, mas o registro automático falhou." };
+  }
+
+  return { sucesso: true, dados: { identificadorExterno } };
 }

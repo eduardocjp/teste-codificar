@@ -17,7 +17,7 @@ O fluxo principal é o cadastro manual de chamados. O Intent Solver é um difere
 - Intent Solver determinístico com palavras-chave, exemplos e Fuse.js.
 - Simulador do Intent Solver.
 - Dashboard com indicadores e carga por atendente.
-- Evolution API opcional com criação de instância, QR Code e exclusão da instância ao desconectar.
+- Evolution API opcional com configuração administrativa, QR Code com rate limit, webhook, criação automática de chamados e envio de protocolo por cron.
 
 ## Stack
 
@@ -62,13 +62,14 @@ EVOLUTION_API_CHAVE=""
 EVOLUTION_API_INSTANCIA="teste_cod_01"
 EVOLUTION_WEBHOOK_SEGREDO=""
 EVOLUTION_WEBHOOK_URL="https://teste-codificar.vercel.app/api/evolution/webhook"
+CRON_SECRET=""
 ```
 
 `DATABASE_URL` é usada pelo Prisma Client em runtime.
 
 `DIRECT_URL` é usada pelo Prisma CLI para migrations e seed.
 
-As variáveis da Evolution são opcionais enquanto `EVOLUTION_API_HABILITADA="false"`. Quando habilitada, a área Admin usa esses valores para criar a instância `teste_cod_01`, configurar o webhook e gerar o QR Code.
+As variáveis da Evolution são opcionais enquanto `EVOLUTION_API_HABILITADA="false"`. Quando habilitada, a área Admin usa esses valores para criar a instância `teste_cod_01`, configurar o webhook e gerar o QR Code. `CRON_SECRET` protege a rota que envia confirmações pendentes de protocolo.
 
 ## Banco e Prisma
 
@@ -134,6 +135,7 @@ Testes atuais:
 - Intent Solver.
 - Ordenação da distribuição automática.
 - Schema de criação de chamado.
+- Configuração, parser, QR Code e fluxo automático do WhatsApp com mocks.
 
 ## Distribuição automática
 
@@ -190,33 +192,63 @@ prisma generate && next build
 
 Não execute Docker, PostgreSQL local ou Redis na Vercel.
 
-## Evolution API
+## WhatsApp via Evolution API
 
-A área Admin possui botão para conectar WhatsApp via Evolution. Ao clicar em `Atualizar QR Code`, o sistema:
+A área Admin possui o botão `Configurar WhatsApp`. O modal permite:
+
+- ativar ou desativar a automação sem desconectar a instância;
+- configurar número opcional de aviso interno;
+- configurar a mensagem de primeiro contato;
+- abrir o QR Code de conexão;
+- desconectar a instância com confirmação.
+
+Desativar a automação não desconecta o WhatsApp. Enquanto desativada, a aplicação não responde mensagens automaticamente e não cria chamados por WhatsApp.
+
+Ao conectar, o sistema:
 
 1. usa `EVOLUTION_API_URL` e `EVOLUTION_API_CHAVE`;
 2. cria a instância única `EVOLUTION_API_INSTANCIA` ou `teste_cod_01`;
 3. configura o webhook em `EVOLUTION_WEBHOOK_URL`;
 4. solicita o QR Code real da Evolution;
-5. exibe o QR Code para leitura no WhatsApp.
+5. exibe o QR Code por até 30 segundos;
+6. bloqueia nova solicitação de QR Code por 60 segundos no servidor.
 
 Ao clicar em desconectar, o sistema exclui a instância na Evolution API. Não há tentativa automática de reconexão.
 
-O webhook oficial do projeto é:
+O webhook oficial configurado no `.env.example` é:
 
 ```text
 /api/evolution/webhook
 ```
 
-A rota legada `/api/webhook/evolution` permanece como compatibilidade.
+A rota `/api/webhook/evolution` também permanece disponível como compatibilidade.
 
-O processamento completo de mensagens recebidas para criar chamados automaticamente ainda deve validar payload, idempotência e regras de criação antes de salvar conversas/chamados.
+### Fluxo automático de atendimento
+
+Quando uma mensagem chega pelo webhook:
+
+1. o webhook valida o segredo configurado;
+2. mensagens duplicadas são ignoradas pelo identificador externo;
+3. primeiro contato cria uma sessão e envia a orientação estruturada;
+4. a segunda mensagem precisa conter nome, assunto e descrição por linha;
+5. o Intent Solver é executado com assunto e descrição;
+6. o chamado é criado com origem `WHATSAPP` e distribuição automática;
+7. um aviso opcional é enviado uma única vez para o número de suporte;
+8. o protocolo é agendado para envio após dois minutos.
+
+O envio do protocolo não usa `setTimeout`. Ele é processado por:
+
+```text
+POST /api/cron/whatsapp
+```
+
+Essa rota deve receber `x-cron-secret` ou `Authorization: Bearer <CRON_SECRET>`. Ela pode ser chamada por Vercel Cron ou por rotina externa da VPS.
 
 ## Limitações do MVP
 
 - Exclusão de chamados não foi priorizada.
 - A distribuição automática usa transação na atribuição, mas a criação + seleção pode receber reforços futuros para concorrência intensa.
-- A conexão com Evolution já cria QR Code real quando habilitada; o processamento de mensagens recebidas ainda será expandido.
+- A integração com Evolution depende da VPS e das variáveis reais em produção; os testes automatizados usam mocks e não dependem da instância real.
 
 ## Bibliotecas externas
 

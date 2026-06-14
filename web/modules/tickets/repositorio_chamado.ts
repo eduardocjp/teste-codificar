@@ -4,6 +4,7 @@ import { prisma } from "../../lib/prisma";
 import type { DadosCriacaoChamado, DadosFiltroChamado } from "./schema_chamado";
 import type { SessaoUsuario } from "../../types/usuario";
 import type { OrigemChamadoValor } from "../../types/dominio";
+import { gerarProtocoloChamado } from "./protocolo_chamado";
 
 export type DadosAtualizacaoChamadoPersistencia = {
   titulo?: string;
@@ -12,6 +13,8 @@ export type DadosAtualizacaoChamadoPersistencia = {
   prioridade?: "BAIXA" | "MEDIA" | "ALTA";
   status?: "ABERTO" | "EM_ANDAMENTO" | "RESOLVIDO" | "FECHADO";
   origem?: OrigemChamadoValor;
+  solicitanteNome?: string | null;
+  solicitanteTelefone?: string | null;
   setorId?: string;
   responsavelId?: string | null;
   intencaoId?: string | null;
@@ -110,8 +113,11 @@ export async function buscarChamadoPorId(id: string, sessao?: SessaoUsuario) {
 export async function criarChamado(dados: DadosCriacaoChamado) {
   return prisma.chamado.create({
     data: {
+      protocolo: gerarProtocoloChamado(),
       titulo: dados.titulo,
       descricao: dados.descricao,
+      solicitanteNome: dados.solicitanteNome ?? null,
+      solicitanteTelefone: dados.solicitanteTelefone ?? null,
       prioridade: dados.prioridade,
       status: dados.status,
       setorId: dados.setorId,

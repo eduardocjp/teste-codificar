@@ -58,6 +58,10 @@ const evolutionServicoMock = vi.hoisted(() => ({
   desconectarEvolution: vi.fn(),
 }));
 
+const atendimentoWhatsappMock = vi.hoisted(() => ({
+  processarWebhookWhatsapp: vi.fn(),
+}));
+
 vi.mock("../web/lib/auth", () => authMock);
 vi.mock("../web/modules/setores/servico_setor", () => setorMock);
 vi.mock("../web/modules/responsaveis/servico_responsavel", () => responsavelMock);
@@ -67,6 +71,7 @@ vi.mock("../web/modules/tickets/servico_chamado", () => chamadoServicoMock);
 vi.mock("../web/modules/tickets/repositorio_chamado", () => chamadoRepoMock);
 vi.mock("../web/services/servico_distribuicao", () => distribuicaoMock);
 vi.mock("../web/services/servico_evolution", () => evolutionServicoMock);
+vi.mock("../web/services/servico_atendimento_whatsapp", () => atendimentoWhatsappMock);
 vi.mock("../web/lib/env", () => envMock);
 vi.mock("../web/utils/logger", () => ({
   logError: vi.fn(),
@@ -137,6 +142,7 @@ async function json(response: Response): Promise<Record<string, unknown>> {
 beforeEach(() => {
   vi.clearAllMocks();
   authMock.validarSessaoAtiva.mockResolvedValue(sessaoOk);
+  atendimentoWhatsappMock.processarWebhookWhatsapp.mockResolvedValue({ sucesso: true, dados: { acao: "ignorado" } });
 });
 
 describe("controller_auth", () => {

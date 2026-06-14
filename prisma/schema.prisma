@@ -32,20 +32,35 @@ enum OrigemChamado {
   EMAIL
 }
 
-model Usuario {
-  id                   String        @id @default(uuid()) @db.Uuid
-  nome                 String        @db.VarChar(120)
-  email                String        @unique @db.VarChar(160)
-  senhaHash            String        @map("senha_hash")
-  perfil               PerfilUsuario @default(ATENDENTE)
-  ativo                Boolean       @default(true)
-  setorId              String?       @map("setor_id") @db.Uuid
-  ultimaAtribuicao     DateTime?     @map("ultima_atribuicao")
-  criadoEm             DateTime      @default(now()) @map("criado_em")
-  atualizadoEm         DateTime      @updatedAt @map("atualizado_em")
+enum EstadoSessaoWhatsapp {
+  AGUARDANDO_DADOS
+  CHAMADO_CRIADO
+  EM_ATENDIMENTO
+  EXPIRADA
+}
 
-  setor                Setor?        @relation(fields: [setorId], references: [id], onDelete: SetNull)
-  chamadosResponsaveis Chamado[]     @relation("ResponsavelChamado")
+enum TipoMensagemAutomaticaWhatsapp {
+  ORIENTACAO_INICIAL
+  SOLICITACAO_CORRECAO
+  PROTOCOLO
+  AVISO_SUPORTE
+  OUTRA_AUTOMACAO
+}
+
+model Usuario {
+  id               String        @id @default(uuid()) @db.Uuid
+  nome             String        @db.VarChar(120)
+  email            String        @unique @db.VarChar(160)
+  senhaHash        String        @map("senha_hash")
+  perfil           PerfilUsuario @default(ATENDENTE)
+  ativo            Boolean       @default(true)
+  setorId          String?       @map("setor_id") @db.Uuid
+  ultimaAtribuicao DateTime?     @map("ultima_atribuicao")
+  criadoEm         DateTime      @default(now()) @map("criado_em")
+  atualizadoEm     DateTime      @updatedAt @map("atualizado_em")
+
+  setor                Setor?    @relation(fields: [setorId], references: [id], onDelete: SetNull)
+  chamadosResponsaveis Chamado[] @relation("ResponsavelChamado")
   sessoes              Sessao[]
 
   @@index([setorId, ativo])
@@ -59,7 +74,7 @@ model Sessao {
   expiraEm  DateTime @map("expira_em")
   criadoEm  DateTime @default(now()) @map("criado_em")
 
-  usuario   Usuario  @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  usuario Usuario @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
 
   @@index([usuarioId])
   @@index([expiraEm])
@@ -67,18 +82,18 @@ model Sessao {
 }
 
 model Setor {
-  id           String     @id @default(uuid()) @db.Uuid
-  nome         String     @unique @db.VarChar(100)
+  id           String   @id @default(uuid()) @db.Uuid
+  nome         String   @unique @db.VarChar(100)
   descricao    String?
-  ativo        Boolean    @default(true)
-  ehTriagem    Boolean    @default(false) @map("eh_triagem")
-  criadoEm     DateTime   @default(now()) @map("criado_em")
-  atualizadoEm DateTime   @updatedAt @map("atualizado_em")
+  ativo        Boolean  @default(true)
+  ehTriagem    Boolean  @default(false) @map("eh_triagem")
+  criadoEm     DateTime @default(now()) @map("criado_em")
+  atualizadoEm DateTime @updatedAt @map("atualizado_em")
 
-  usuarios     Usuario[]
-  chamados     Chamado[]
-  intencoes    Intencao[]
-  conversas    Conversa[]
+  usuarios  Usuario[]
+  chamados  Chamado[]
+  intencoes Intencao[]
+  conversas Conversa[]
 
   @@index([ativo])
   @@map("setores")
@@ -100,35 +115,40 @@ model Intencao {
   criadoEm           DateTime   @default(now()) @map("criado_em")
   atualizadoEm       DateTime   @updatedAt @map("atualizado_em")
 
-  setor              Setor      @relation(fields: [setorId], references: [id], onDelete: Restrict)
-  chamados           Chamado[]
-  conversas          Conversa[]
+  setor     Setor      @relation(fields: [setorId], references: [id], onDelete: Restrict)
+  chamados  Chamado[]
+  conversas Conversa[]
 
   @@index([setorId, ativo])
   @@map("intencoes")
 }
 
 model Chamado {
-  id                String        @id @default(uuid()) @db.Uuid
-  titulo            String        @db.VarChar(160)
-  descricao         String
-  assunto           String?       @db.VarChar(160)
-  prioridade        Prioridade    @default(MEDIA)
-  status            StatusChamado @default(ABERTO)
-  origem            OrigemChamado @default(MANUAL)
-  setorId           String        @map("setor_id") @db.Uuid
-  responsavelId     String?       @map("responsavel_id") @db.Uuid
-  intencaoId        String?       @map("intencao_id") @db.Uuid
-  confiancaIntencao Float?        @map("confianca_intencao")
-  dataAbertura      DateTime      @default(now()) @map("data_abertura")
-  dataAtualizacao   DateTime      @updatedAt @map("data_atualizacao")
-  dataResolucao     DateTime?     @map("data_resolucao")
-  dataFechamento    DateTime?     @map("data_fechamento")
+  id                  String        @id @default(uuid()) @db.Uuid
+  protocolo           String?       @unique @db.VarChar(40)
+  titulo              String        @db.VarChar(160)
+  descricao           String
+  assunto             String?       @db.VarChar(160)
+  solicitanteNome     String?       @map("solicitante_nome") @db.VarChar(160)
+  solicitanteTelefone String?       @map("solicitante_telefone") @db.VarChar(32)
+  prioridade          Prioridade    @default(MEDIA)
+  status              StatusChamado @default(ABERTO)
+  origem              OrigemChamado @default(MANUAL)
+  setorId             String        @map("setor_id") @db.Uuid
+  responsavelId       String?       @map("responsavel_id") @db.Uuid
+  intencaoId          String?       @map("intencao_id") @db.Uuid
+  confiancaIntencao   Float?        @map("confianca_intencao")
+  dataAbertura        DateTime      @default(now()) @map("data_abertura")
+  dataAtualizacao     DateTime      @updatedAt @map("data_atualizacao")
+  dataResolucao       DateTime?     @map("data_resolucao")
+  dataFechamento      DateTime?     @map("data_fechamento")
 
-  setor             Setor         @relation(fields: [setorId], references: [id], onDelete: Restrict)
-  responsavel       Usuario?      @relation("ResponsavelChamado", fields: [responsavelId], references: [id], onDelete: SetNull)
-  intencao          Intencao?     @relation(fields: [intencaoId], references: [id], onDelete: SetNull)
-  conversas         Conversa[]
+  setor                     Setor                     @relation(fields: [setorId], references: [id], onDelete: Restrict)
+  responsavel               Usuario?                  @relation("ResponsavelChamado", fields: [responsavelId], references: [id], onDelete: SetNull)
+  intencao                  Intencao?                 @relation(fields: [intencaoId], references: [id], onDelete: SetNull)
+  conversas                 Conversa[]
+  sessoesWhatsapp           SessaoWhatsapp[]
+  enviosAutomaticosWhatsapp EnvioAutomaticoWhatsapp[]
 
   @@index([status, prioridade])
   @@index([setorId, status])
@@ -150,11 +170,76 @@ model Conversa {
   chamadoId            String?       @map("chamado_id") @db.Uuid
   criadoEm             DateTime      @default(now()) @map("criado_em")
 
-  intencao             Intencao?     @relation(fields: [intencaoId], references: [id], onDelete: SetNull)
-  setor                Setor?        @relation(fields: [setorId], references: [id], onDelete: SetNull)
-  chamado              Chamado?      @relation(fields: [chamadoId], references: [id], onDelete: SetNull)
+  intencao Intencao? @relation(fields: [intencaoId], references: [id], onDelete: SetNull)
+  setor    Setor?    @relation(fields: [setorId], references: [id], onDelete: SetNull)
+  chamado  Chamado?  @relation(fields: [chamadoId], references: [id], onDelete: SetNull)
 
   @@index([origem, criadoEm])
   @@index([chamadoId])
   @@map("conversas")
+}
+
+model ConfiguracaoWhatsapp {
+  id                      String    @id @default(uuid()) @db.Uuid
+  chave                   String    @unique @default("principal") @db.VarChar(40)
+  ativo                   Boolean   @default(false)
+  conectado               Boolean   @default(false)
+  numeroConectado         String?   @map("numero_conectado") @db.VarChar(32)
+  numeroAviso             String?   @map("numero_aviso") @db.VarChar(32)
+  mensagemPrimeiroContato String    @map("mensagem_primeiro_contato")
+  ultimaSolicitacaoQrEm   DateTime? @map("ultima_solicitacao_qr_em")
+  novaTentativaQrEm       DateTime? @map("nova_tentativa_qr_em")
+  conectadoEm             DateTime? @map("conectado_em")
+  desconectadoEm          DateTime? @map("desconectado_em")
+  criadoEm                DateTime  @default(now()) @map("criado_em")
+  atualizadoEm            DateTime  @updatedAt @map("atualizado_em")
+
+  @@map("configuracoes_whatsapp")
+}
+
+model SessaoWhatsapp {
+  id                     String               @id @default(uuid()) @db.Uuid
+  telefoneCliente        String               @map("telefone_cliente") @db.VarChar(32)
+  estado                 EstadoSessaoWhatsapp
+  chamadoId              String?              @map("chamado_id") @db.Uuid
+  primeiraMensagemEm     DateTime             @map("primeira_mensagem_em")
+  ultimaInteracaoEm      DateTime             @map("ultima_interacao_em")
+  ultimaRespostaHumanaEm DateTime?            @map("ultima_resposta_humana_em")
+  expiraEm               DateTime             @map("expira_em")
+  orientacaoEnviada      Boolean              @default(false) @map("orientacao_enviada")
+  avisoSuporteEnviado    Boolean              @default(false) @map("aviso_suporte_enviado")
+  protocoloAgendadoPara  DateTime?            @map("protocolo_agendado_para")
+  protocoloEnviadoEm     DateTime?            @map("protocolo_enviado_em")
+  tentativasEnvio        Int                  @default(0) @map("tentativas_envio")
+  ultimoErroEnvio        String?              @map("ultimo_erro_envio")
+  criadoEm               DateTime             @default(now()) @map("criado_em")
+  atualizadoEm           DateTime             @updatedAt @map("atualizado_em")
+
+  chamado           Chamado?                  @relation(fields: [chamadoId], references: [id], onDelete: SetNull)
+  enviosAutomaticos EnvioAutomaticoWhatsapp[]
+
+  @@index([telefoneCliente, estado])
+  @@index([expiraEm])
+  @@index([protocoloAgendadoPara, protocoloEnviadoEm])
+  @@map("sessoes_whatsapp")
+}
+
+model EnvioAutomaticoWhatsapp {
+  id                   String                         @id @default(uuid()) @db.Uuid
+  identificadorExterno String?                        @unique @map("identificador_externo") @db.VarChar(200)
+  tipo                 TipoMensagemAutomaticaWhatsapp
+  destinatario         String                         @db.VarChar(32)
+  conteudoHash         String                         @map("conteudo_hash") @db.VarChar(64)
+  conteudoResumo       String?                        @map("conteudo_resumo") @db.VarChar(240)
+  sessaoWhatsappId     String?                        @map("sessao_whatsapp_id") @db.Uuid
+  chamadoId            String?                        @map("chamado_id") @db.Uuid
+  enviadoEm            DateTime                       @default(now()) @map("enviado_em")
+
+  sessaoWhatsapp SessaoWhatsapp? @relation(fields: [sessaoWhatsappId], references: [id], onDelete: SetNull)
+  chamado        Chamado?        @relation(fields: [chamadoId], references: [id], onDelete: SetNull)
+
+  @@index([destinatario, enviadoEm])
+  @@index([sessaoWhatsappId])
+  @@index([chamadoId])
+  @@map("envios_automaticos_whatsapp")
 }

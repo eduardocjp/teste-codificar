@@ -2,9 +2,12 @@ import type { OrigemChamadoValor, PrioridadeValor, StatusChamadoValor } from "./
 
 export type ChamadoComRelacoes = {
   id: string;
+  protocolo: string | null;
   titulo: string;
   descricao: string;
   assunto: string | null;
+  solicitanteNome: string | null;
+  solicitanteTelefone: string | null;
   prioridade: PrioridadeValor;
   status: StatusChamadoValor;
   origem: OrigemChamadoValor;

@@ -21,6 +21,8 @@ export const schemaCriacaoChamado = z.object({
   atribuicaoAutomatica: z.boolean().default(false),
   intencaoId: uuidOpcional,
   assunto: z.string().trim().optional().nullable(),
+  solicitanteNome: z.string().trim().min(2).max(160).optional().nullable(),
+  solicitanteTelefone: z.string().trim().min(8).max(32).optional().nullable(),
   confiancaIntencao: z.number().min(0).max(1).optional().nullable(),
   origem: z.enum(ORIGENS_CHAMADO).default("MANUAL"),
 });
@@ -34,6 +36,8 @@ export const schemaAtualizacaoChamado = z.object({
   responsavelId: uuidNullableOpcional,
   intencaoId: uuidNullableOpcional,
   assunto: z.string().trim().optional().nullable(),
+  solicitanteNome: z.string().trim().min(2).max(160).optional().nullable(),
+  solicitanteTelefone: z.string().trim().min(8).max(32).optional().nullable(),
   confiancaIntencao: z.number().min(0).max(1).optional().nullable(),
   origem: z.enum(ORIGENS_CHAMADO).optional(),
 });
