@@ -52,6 +52,12 @@ const envMock = vi.hoisted(() => ({
   obterEnv: vi.fn(() => ({ EVOLUTION_API_HABILITADA: "false" })),
 }));
 
+const evolutionServicoMock = vi.hoisted(() => ({
+  obterStatusEvolution: vi.fn(),
+  conectarEvolution: vi.fn(),
+  desconectarEvolution: vi.fn(),
+}));
+
 vi.mock("../web/lib/auth", () => authMock);
 vi.mock("../web/modules/setores/servico_setor", () => setorMock);
 vi.mock("../web/modules/responsaveis/servico_responsavel", () => responsavelMock);
@@ -60,9 +66,11 @@ vi.mock("../web/modules/intents/repositorio_intencao", () => intencaoRepoMock);
 vi.mock("../web/modules/tickets/servico_chamado", () => chamadoServicoMock);
 vi.mock("../web/modules/tickets/repositorio_chamado", () => chamadoRepoMock);
 vi.mock("../web/services/servico_distribuicao", () => distribuicaoMock);
+vi.mock("../web/services/servico_evolution", () => evolutionServicoMock);
 vi.mock("../web/lib/env", () => envMock);
 vi.mock("../web/utils/logger", () => ({
   logError: vi.fn(),
+  logInfo: vi.fn(),
 }));
 
 import { controllerLogin, controllerLogout } from "../web/controllers/controller_auth";
@@ -87,7 +95,12 @@ import {
   controllerListarResponsaveis,
 } from "../web/controllers/controller_responsavel";
 import { controllerListarSetores } from "../web/controllers/controller_setor";
-import { controllerWebhookEvolution } from "../web/controllers/controller_webhook_evolution";
+import {
+  controllerConectarEvolution,
+  controllerDesconectarEvolution,
+  controllerStatusEvolution,
+  controllerWebhookEvolution,
+} from "../web/controllers/controller_evolution";
 
 const sessaoOk = {
   sucesso: true as const,
@@ -346,16 +359,65 @@ describe("controllerWebhookEvolution", () => {
   it("retorna 404 quando Evolution está desabilitada", async () => {
     (envMock.obterEnv as Mock).mockReturnValueOnce({ EVOLUTION_API_HABILITADA: "false" });
 
-    const response = await controllerWebhookEvolution();
+    const response = await controllerWebhookEvolution(requestJson({ event: "CONNECTION_UPDATE" }));
 
     expect(response.status).toBe(404);
   });
 
-  it("retorna 501 quando Evolution está habilitada mas não implementada", async () => {
-    (envMock.obterEnv as Mock).mockReturnValueOnce({ EVOLUTION_API_HABILITADA: "true" });
+  it("controllerStatusEvolution exige administrador", async () => {
+    evolutionServicoMock.obterStatusEvolution.mockResolvedValueOnce({ sucesso: true, dados: { estado: "conectada" } });
 
-    const response = await controllerWebhookEvolution();
+    const response = await controllerStatusEvolution();
 
-    expect(response.status).toBe(501);
+    expect(response.status).toBe(200);
+    expect(authMock.validarSessaoAtiva).toHaveBeenCalledWith(["ADMINISTRADOR"]);
+  });
+
+  it("controllerConectarEvolution retorna QR Code do serviço", async () => {
+    evolutionServicoMock.conectarEvolution.mockResolvedValueOnce({
+      sucesso: true,
+      dados: { instanciaNome: "teste_cod_01", estado: "conectando", qrcodeBase64: "data:image/png;base64,abc" },
+    });
+
+    const response = await controllerConectarEvolution();
+
+    expect(response.status).toBe(200);
+    expect(evolutionServicoMock.conectarEvolution).toHaveBeenCalled();
+  });
+
+  it("controllerDesconectarEvolution exclui instância pelo serviço", async () => {
+    evolutionServicoMock.desconectarEvolution.mockResolvedValueOnce({ sucesso: true, dados: { estado: "desconectada" } });
+
+    const response = await controllerDesconectarEvolution();
+
+    expect(response.status).toBe(200);
+    expect(evolutionServicoMock.desconectarEvolution).toHaveBeenCalled();
+  });
+
+  it("webhook Evolution rejeita segredo inválido", async () => {
+    (envMock.obterEnv as Mock).mockReturnValueOnce({
+      EVOLUTION_API_HABILITADA: "true",
+      EVOLUTION_WEBHOOK_SEGREDO: "segredo",
+    });
+
+    const response = await controllerWebhookEvolution(requestJson({ event: "MESSAGES_UPSERT" }));
+
+    expect(response.status).toBe(401);
+  });
+
+  it("webhook Evolution aceita segredo configurado", async () => {
+    (envMock.obterEnv as Mock).mockReturnValueOnce({
+      EVOLUTION_API_HABILITADA: "true",
+      EVOLUTION_WEBHOOK_SEGREDO: "segredo",
+    });
+
+    const request = new Request("http://localhost/api/evolution/webhook", {
+      method: "POST",
+      body: JSON.stringify({ event: "CONNECTION_UPDATE" }),
+      headers: { "Content-Type": "application/json", "x-webhook-secret": "segredo" },
+    }) as NextRequest;
+    const response = await controllerWebhookEvolution(request);
+
+    expect(response.status).toBe(200);
   });
 });

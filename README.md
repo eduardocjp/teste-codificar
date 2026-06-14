@@ -17,7 +17,7 @@ O fluxo principal é o cadastro manual de chamados. O Intent Solver é um difere
 - Intent Solver determinístico com palavras-chave, exemplos e Fuse.js.
 - Simulador do Intent Solver.
 - Dashboard com indicadores e carga por atendente.
-- Evolution API preparada como integração opcional e desabilitada por padrão.
+- Evolution API opcional com criação de instância, QR Code e exclusão da instância ao desconectar.
 
 ## Stack
 
@@ -43,7 +43,7 @@ Navegador
 
 O Supabase é usado apenas como PostgreSQL. Não há Supabase Client, Supabase Auth ou acesso ao banco pelo navegador.
 
-A Evolution API, quando implementada, deve rodar separadamente em uma VPS com Docker, PostgreSQL próprio e Redis próprio. O banco da Evolution não deve ser compartilhado com o banco da aplicação.
+A Evolution API roda separadamente em uma VPS com Docker, PostgreSQL próprio e Redis próprio. O banco da Evolution não deve ser compartilhado com o banco da aplicação.
 
 ## Variáveis
 
@@ -57,13 +57,18 @@ SESSAO_DURACAO_HORAS="8"
 NEXT_PUBLIC_NOME_APLICACAO="Sistema de Chamados"
 PROVEDOR_MENSAGENS="simulador"
 EVOLUTION_API_HABILITADA="false"
+EVOLUTION_API_URL=""
+EVOLUTION_API_CHAVE=""
+EVOLUTION_API_INSTANCIA="teste_cod_01"
+EVOLUTION_WEBHOOK_SEGREDO=""
+EVOLUTION_WEBHOOK_URL="https://teste-codificar.vercel.app/api/evolution/webhook"
 ```
 
 `DATABASE_URL` é usada pelo Prisma Client em runtime.
 
 `DIRECT_URL` é usada pelo Prisma CLI para migrations e seed.
 
-As variáveis da Evolution são opcionais enquanto `EVOLUTION_API_HABILITADA="false"`.
+As variáveis da Evolution são opcionais enquanto `EVOLUTION_API_HABILITADA="false"`. Quando habilitada, a área Admin usa esses valores para criar a instância `teste_cod_01`, configurar o webhook e gerar o QR Code.
 
 ## Banco e Prisma
 
@@ -169,7 +174,13 @@ Configure na Vercel:
 - `SESSAO_DURACAO_HORAS`
 - `NEXT_PUBLIC_NOME_APLICACAO`
 - `PROVEDOR_MENSAGENS`
-- variáveis da Evolution apenas quando a integração estiver habilitada
+- variáveis da Evolution apenas quando a integração estiver habilitada:
+  - `EVOLUTION_API_HABILITADA`
+  - `EVOLUTION_API_URL`
+  - `EVOLUTION_API_CHAVE`
+  - `EVOLUTION_API_INSTANCIA`
+  - `EVOLUTION_WEBHOOK_SEGREDO`
+  - `EVOLUTION_WEBHOOK_URL`
 
 O script de build executa:
 
@@ -181,16 +192,31 @@ Não execute Docker, PostgreSQL local ou Redis na Vercel.
 
 ## Evolution API
 
-A rota `/api/webhook/evolution` existe, mas retorna desabilitada por padrão.
+A área Admin possui botão para conectar WhatsApp via Evolution. Ao clicar em `Atualizar QR Code`, o sistema:
 
-A integração real deve validar segredo, idempotência e payload antes de criar conversas/chamados. Nenhuma credencial da Evolution é necessária para avaliar o núcleo do sistema.
+1. usa `EVOLUTION_API_URL` e `EVOLUTION_API_CHAVE`;
+2. cria a instância única `EVOLUTION_API_INSTANCIA` ou `teste_cod_01`;
+3. configura o webhook em `EVOLUTION_WEBHOOK_URL`;
+4. solicita o QR Code real da Evolution;
+5. exibe o QR Code para leitura no WhatsApp.
+
+Ao clicar em desconectar, o sistema exclui a instância na Evolution API. Não há tentativa automática de reconexão.
+
+O webhook oficial do projeto é:
+
+```text
+/api/evolution/webhook
+```
+
+A rota legada `/api/webhook/evolution` permanece como compatibilidade.
+
+O processamento completo de mensagens recebidas para criar chamados automaticamente ainda deve validar payload, idempotência e regras de criação antes de salvar conversas/chamados.
 
 ## Limitações do MVP
 
 - Exclusão de chamados não foi priorizada.
-- CRUD visual completo de intenções/atendentes ainda pode ser expandido.
 - A distribuição automática usa transação na atribuição, mas a criação + seleção pode receber reforços futuros para concorrência intensa.
-- A Evolution API está intencionalmente desabilitada.
+- A conexão com Evolution já cria QR Code real quando habilitada; o processamento de mensagens recebidas ainda será expandido.
 
 ## Bibliotecas externas
 

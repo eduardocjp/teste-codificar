@@ -5,7 +5,7 @@ import { controllerWebhookEvolution } from "../../../../../web/controllers/contr
 export const dynamic = "force-dynamic";
 
 /**
- * POST /api/webhook/evolution
+ * POST /api/evolution/webhook
  */
 export async function POST(request: NextRequest) {
   return controllerWebhookEvolution(request);

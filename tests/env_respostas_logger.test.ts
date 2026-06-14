@@ -18,6 +18,7 @@ describe("env", () => {
     delete process.env.SESSAO_DURACAO_HORAS;
     delete process.env.PROVEDOR_MENSAGENS;
     delete process.env.EVOLUTION_API_HABILITADA;
+    delete process.env.EVOLUTION_WEBHOOK_URL;
 
     const env = obterEnv();
 
@@ -25,6 +26,7 @@ describe("env", () => {
     expect(env.SESSAO_DURACAO_HORAS).toBe(8);
     expect(env.PROVEDOR_MENSAGENS).toBe("simulador");
     expect(env.EVOLUTION_API_HABILITADA).toBe("false");
+    expect(env.EVOLUTION_WEBHOOK_URL).toBeUndefined();
   });
 
   it("obterDatabaseUrl prioriza DATABASE_URL configurada", () => {

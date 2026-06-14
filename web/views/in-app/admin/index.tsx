@@ -32,8 +32,8 @@ export function AdminView() {
           <p className="text-xs font-medium uppercase text-steel">Canais de entrada</p>
           <h2 className="mt-2 text-xl font-semibold text-ink">Conexões para chamados automáticos</h2>
           <p className="mt-2 text-sm leading-6 text-steel">
-            Configure visualmente WhatsApp via Evolution e e-mail de recebimento. As integrações reais continuam
-            opcionais e desabilitadas neste momento.
+            Conecte o WhatsApp via Evolution usando a VPS configurada no .env e mantenha o e-mail preparado para
+            recebimento futuro.
           </p>
           <div className="mt-5 flex flex-col gap-2 sm:flex-row">
             <QrCodeConexao />
