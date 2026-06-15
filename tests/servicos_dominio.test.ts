@@ -27,7 +27,13 @@ const prismaMock = vi.hoisted(() => ({
     count: vi.fn(),
     update: vi.fn(),
   },
-  $transaction: vi.fn(async (operacoes: Promise<unknown>[]) => Promise.all(operacoes)),
+  $transaction: vi.fn(async (operacoes: Promise<unknown>[] | ((cliente: unknown) => Promise<unknown>)) => {
+    if (typeof operacoes === "function") {
+      return operacoes(prismaMock);
+    }
+
+    return Promise.all(operacoes);
+  }),
 }));
 
 vi.mock("../web/modules/setores/repositorio_setor", () => setorRepoMock);

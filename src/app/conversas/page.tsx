@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 
 import { obterSessaoAtual } from "../../../web/lib/auth";
+import { listarConversasAtendimento } from "../../../web/services/servico_conversa";
 import { ConversaView } from "../../../web/views/in-app/conversa";
 import { SystemLayout } from "../../../web/views/layout/system_layout";
 
@@ -13,9 +14,11 @@ export default async function ConversasPage() {
     redirect("/login");
   }
 
+  const conversas = await listarConversasAtendimento(sessao);
+
   return (
     <SystemLayout sessao={sessao}>
-      <ConversaView />
+      <ConversaView conversas={conversas} perfil={sessao.perfil} />
     </SystemLayout>
   );
 }

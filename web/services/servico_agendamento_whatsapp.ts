@@ -48,6 +48,7 @@ export async function processarAgendamentosWhatsapp(
       protocoloEnviadoEm: null,
       chamadoId: { not: null },
       estado: { not: "EXPIRADA" },
+      finalizadoEm: null,
     },
     include: {
       chamado: {

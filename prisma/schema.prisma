@@ -211,6 +211,7 @@ model SessaoWhatsapp {
   avisoSuporteEnviado    Boolean              @default(false) @map("aviso_suporte_enviado")
   protocoloAgendadoPara  DateTime?            @map("protocolo_agendado_para")
   protocoloEnviadoEm     DateTime?            @map("protocolo_enviado_em")
+  finalizadoEm           DateTime?            @map("finalizado_em")
   tentativasEnvio        Int                  @default(0) @map("tentativas_envio")
   ultimoErroEnvio        String?              @map("ultimo_erro_envio")
   criadoEm               DateTime             @default(now()) @map("criado_em")
@@ -222,6 +223,7 @@ model SessaoWhatsapp {
   @@index([telefoneCliente, estado])
   @@index([expiraEm])
   @@index([protocoloAgendadoPara, protocoloEnviadoEm])
+  @@index([finalizadoEm])
   @@map("sessoes_whatsapp")
 }
 

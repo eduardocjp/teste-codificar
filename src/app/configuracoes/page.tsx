@@ -15,11 +15,12 @@ export default async function ConfiguracoesPage() {
     redirect("/login");
   }
 
-  const [intencoes, setores] = await Promise.all([obterIntencoes(), obterSetoresParaSelecao()]);
+  const intencoes = await obterIntencoes();
+  const setores = await obterSetoresParaSelecao();
 
   return (
     <SystemLayout sessao={sessao}>
-      <ConfiguracoesView intencoes={intencoes} setores={setores} />
+      <ConfiguracoesView intencoes={intencoes} setores={setores} perfil={sessao.perfil} />
     </SystemLayout>
   );
 }

@@ -251,7 +251,7 @@ describe("servico_chamado", () => {
   it("salvarAtualizacaoChamado retorna não encontrado", async () => {
     chamadoRepoMock.buscarChamadoPorId.mockResolvedValueOnce(null);
 
-    await expect(salvarAtualizacaoChamado("chamado", { status: "FECHADO" })).resolves.toMatchObject({
+    await expect(salvarAtualizacaoChamado("chamado", { status: "FECHADO" }, sessaoAdmin)).resolves.toMatchObject({
       sucesso: false,
       mensagem: "Chamado não encontrado.",
     });
@@ -262,7 +262,7 @@ describe("servico_chamado", () => {
     setorRepoMock.buscarSetorAtivoPorId.mockResolvedValueOnce({ id: uuidSetor });
     chamadoRepoMock.atualizarChamado.mockResolvedValueOnce({ id: "chamado", status: "RESOLVIDO" });
 
-    await expect(salvarAtualizacaoChamado("chamado", { status: "RESOLVIDO" })).resolves.toEqual({
+    await expect(salvarAtualizacaoChamado("chamado", { status: "RESOLVIDO" }, sessaoAdmin)).resolves.toEqual({
       sucesso: true,
       dados: { id: "chamado", status: "RESOLVIDO" },
     });
@@ -277,7 +277,7 @@ describe("servico_chamado", () => {
     setorRepoMock.buscarSetorAtivoPorId.mockResolvedValueOnce({ id: uuidSetor });
     chamadoRepoMock.atualizarChamado.mockResolvedValueOnce({ id: "chamado", status: "ABERTO" });
 
-    await salvarAtualizacaoChamado("chamado", { status: "ABERTO" });
+    await salvarAtualizacaoChamado("chamado", { status: "ABERTO" }, sessaoAdmin);
 
     expect(chamadoRepoMock.atualizarChamado).toHaveBeenCalledWith(
       "chamado",

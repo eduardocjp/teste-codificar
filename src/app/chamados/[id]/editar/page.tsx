@@ -21,11 +21,9 @@ export default async function EditarChamadoPage({ params }: PageProps) {
   }
 
   const { id } = await params;
-  const [chamado, setores, responsaveis] = await Promise.all([
-    buscarChamadoPorId(id, sessao),
-    obterSetoresParaSelecao(),
-    listarResponsaveis(),
-  ]);
+  const chamado = await buscarChamadoPorId(id, sessao);
+  const setores = await obterSetoresParaSelecao();
+  const responsaveis = await listarResponsaveis();
 
   if (!chamado) {
     notFound();

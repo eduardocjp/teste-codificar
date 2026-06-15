@@ -113,6 +113,7 @@ function aplicarDatasStatus(dados: DadosAtualizacaoChamadoPersistencia): DadosAt
 export async function salvarAtualizacaoChamado(
   id: string,
   dados: unknown,
+  sessao: SessaoUsuario,
 ): Promise<ResultadoAcao<ChamadoComRelacoes>> {
   const validacao = schemaAtualizacaoChamado.safeParse(dados);
 
@@ -124,7 +125,7 @@ export async function salvarAtualizacaoChamado(
     };
   }
 
-  const atual = await buscarChamadoPorId(id);
+  const atual = await buscarChamadoPorId(id, sessao);
 
   if (!atual) {
     return { sucesso: false, mensagem: "Chamado não encontrado." };

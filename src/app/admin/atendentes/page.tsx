@@ -19,10 +19,8 @@ export default async function AdminAtendentesPage() {
     redirect("/dashboard");
   }
 
-  const [responsaveis, setores] = await Promise.all([
-    listarAtendentesParaAdministracao(),
-    obterSetoresParaSelecao(),
-  ]);
+  const responsaveis = await listarAtendentesParaAdministracao();
+  const setores = await obterSetoresParaSelecao();
 
   return (
     <SystemLayout sessao={sessao}>

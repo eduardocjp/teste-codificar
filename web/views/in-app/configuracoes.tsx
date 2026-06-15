@@ -3,7 +3,14 @@
 import { useMemo, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 
-import { LABEL_ORIGEM, ORIGENS_CHAMADO, PRIORIDADES, type OrigemChamadoValor, type PrioridadeValor } from "../../types/dominio";
+import {
+  LABEL_ORIGEM,
+  ORIGENS_CHAMADO,
+  PRIORIDADES,
+  type OrigemChamadoValor,
+  type PrioridadeValor,
+} from "../../types/dominio";
+import type { SessaoUsuario } from "../../types/usuario";
 import { CabecalhoPagina } from "../components/cabecalho_pagina";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
@@ -34,6 +41,7 @@ type IntencaoLista = {
 type ConfiguracoesViewProps = {
   intencoes: IntencaoLista[];
   setores: SetorOpcao[];
+  perfil: SessaoUsuario["perfil"];
 };
 
 type EstadoFormularioIntencao = {
@@ -119,8 +127,9 @@ function textoCanais(canais: string[]): string {
   return normalizarCanais(canais).map((canal) => LABEL_ORIGEM[canal]).join(", ");
 }
 
-export function ConfiguracoesView({ intencoes, setores }: ConfiguracoesViewProps) {
+export function ConfiguracoesView({ intencoes, setores, perfil }: ConfiguracoesViewProps) {
   const router = useRouter();
+  const podeEditarIntencoes = perfil === "ADMINISTRADOR";
   const [formulario, setFormulario] = useState<EstadoFormularioIntencao>({
     ...estadoVazio,
     setorId: setores[0]?.id ?? "",
@@ -130,7 +139,6 @@ export function ConfiguracoesView({ intencoes, setores }: ConfiguracoesViewProps
   const [sucesso, setSucesso] = useState<string | null>(null);
 
   const editando = Boolean(formulario.id);
-
   const intencoesOrdenadas = useMemo(
     () => [...intencoes].sort((a, b) => Number(b.ativo) - Number(a.ativo) || a.nome.localeCompare(b.nome)),
     [intencoes],
@@ -164,6 +172,10 @@ export function ConfiguracoesView({ intencoes, setores }: ConfiguracoesViewProps
   }
 
   function editarIntencao(intencao: IntencaoLista): void {
+    if (!podeEditarIntencoes) {
+      return;
+    }
+
     setFormulario(montarEstadoEdicao(intencao));
     setErro(null);
     setSucesso(null);
@@ -185,7 +197,7 @@ export function ConfiguracoesView({ intencoes, setores }: ConfiguracoesViewProps
       canais: formulario.canais,
       prioridadeSugerida: formulario.prioridadeSugerida,
       confiancaMinima: Number(formulario.confiancaMinima) / 100,
-      ativo: formulario.ativo,
+      ativo: podeEditarIntencoes ? formulario.ativo : true,
       setorId: formulario.setorId,
     };
 
@@ -210,6 +222,10 @@ export function ConfiguracoesView({ intencoes, setores }: ConfiguracoesViewProps
   }
 
   async function alternarAtivo(intencao: IntencaoLista): Promise<void> {
+    if (!podeEditarIntencoes) {
+      return;
+    }
+
     setErro(null);
     setSucesso(null);
 
@@ -230,6 +246,10 @@ export function ConfiguracoesView({ intencoes, setores }: ConfiguracoesViewProps
   }
 
   async function excluir(intencao: IntencaoLista): Promise<void> {
+    if (!podeEditarIntencoes) {
+      return;
+    }
+
     const confirmar = window.confirm(`Excluir a intenção "${intencao.nome}"?`);
 
     if (!confirmar) {
@@ -259,7 +279,7 @@ export function ConfiguracoesView({ intencoes, setores }: ConfiguracoesViewProps
     <section>
       <CabecalhoPagina
         titulo="Configurações"
-        descricao="Crie, edite e controle as intenções usadas pelo Intent Solver para classificar chamados."
+        descricao="Crie e consulte as intenções usadas pelo Intent Solver para classificar chamados."
       />
 
       <div className="grid gap-4 xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
@@ -269,6 +289,11 @@ export function ConfiguracoesView({ intencoes, setores }: ConfiguracoesViewProps
             <h2 className="mt-1 text-xl font-semibold text-ink">
               {editando ? "Atualizar intenção" : "Criar nova intenção"}
             </h2>
+            {!podeEditarIntencoes ? (
+              <p className="mt-2 text-sm text-steel">
+                Atendentes podem criar e visualizar intents. Edição, exclusão e status ficam restritos ao administrador.
+              </p>
+            ) : null}
           </div>
 
           <div className="grid gap-4 md:grid-cols-2">
@@ -359,17 +384,19 @@ export function ConfiguracoesView({ intencoes, setores }: ConfiguracoesViewProps
                 required
               />
             </div>
-            <div className="flex items-end">
-              <label className="flex h-10 w-full items-center gap-2 rounded-[14px] border border-input px-3 text-sm text-ink">
-                <input
-                  type="checkbox"
-                  checked={formulario.ativo}
-                  onChange={(evento) => atualizar("ativo", evento.target.checked)}
-                  className="size-4"
-                />
-                Intent ativa
-              </label>
-            </div>
+            {podeEditarIntencoes ? (
+              <div className="flex items-end">
+                <label className="flex h-10 w-full items-center gap-2 rounded-[14px] border border-input px-3 text-sm text-ink">
+                  <input
+                    type="checkbox"
+                    checked={formulario.ativo}
+                    onChange={(evento) => atualizar("ativo", evento.target.checked)}
+                    className="size-4"
+                  />
+                  Intent ativa
+                </label>
+              </div>
+            ) : null}
             <div className="md:col-span-2">
               <Label htmlFor="palavrasChave">Palavras que o sistema deve entender</Label>
               <Textarea
@@ -422,7 +449,7 @@ export function ConfiguracoesView({ intencoes, setores }: ConfiguracoesViewProps
             <Button type="submit" disabled={salvando} className="rounded-full bg-obsidian text-snow shadow-subtle">
               {salvando ? "Salvando..." : editando ? "Salvar alterações" : "Criar intent"}
             </Button>
-            {editando ? (
+            {editando && podeEditarIntencoes ? (
               <Button type="button" variant="outline" className="rounded-full" onClick={limparFormulario}>
                 Cancelar edição
               </Button>
@@ -445,15 +472,25 @@ export function ConfiguracoesView({ intencoes, setores }: ConfiguracoesViewProps
                       {intencao.slug} · {intencao.setor.nome}
                     </p>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => void alternarAtivo(intencao)}
-                    className={`rounded-full px-3 py-1 text-xs font-medium ${
-                      intencao.ativo ? "bg-obsidian text-snow" : "bg-snow text-steel ring-1 ring-fog"
-                    }`}
-                  >
-                    {intencao.ativo ? "Ativa" : "Inativa"}
-                  </button>
+                  {podeEditarIntencoes ? (
+                    <button
+                      type="button"
+                      onClick={() => void alternarAtivo(intencao)}
+                      className={`rounded-full px-3 py-1 text-xs font-medium ${
+                        intencao.ativo ? "bg-obsidian text-snow" : "bg-snow text-steel ring-1 ring-fog"
+                      }`}
+                    >
+                      {intencao.ativo ? "Ativa" : "Inativa"}
+                    </button>
+                  ) : (
+                    <span
+                      className={`rounded-full px-3 py-1 text-xs font-medium ${
+                        intencao.ativo ? "bg-obsidian text-snow" : "bg-snow text-steel ring-1 ring-fog"
+                      }`}
+                    >
+                      {intencao.ativo ? "Ativa" : "Inativa"}
+                    </span>
+                  )}
                 </div>
                 <p className="mt-2 text-sm text-steel">
                   Prioridade {intencao.prioridadeSugerida} · Confiança mínima{" "}
@@ -463,14 +500,16 @@ export function ConfiguracoesView({ intencoes, setores }: ConfiguracoesViewProps
                 <p className="mt-3 line-clamp-2 text-sm text-steel">
                   Palavras: {intencao.palavrasChave.join(", ")}
                 </p>
-                <div className="mt-4 flex flex-wrap gap-2">
-                  <Button type="button" variant="outline" className="rounded-full" onClick={() => editarIntencao(intencao)}>
-                    Editar
-                  </Button>
-                  <Button type="button" variant="outline" className="rounded-full" onClick={() => void excluir(intencao)}>
-                    Excluir
-                  </Button>
-                </div>
+                {podeEditarIntencoes ? (
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    <Button type="button" variant="outline" className="rounded-full" onClick={() => editarIntencao(intencao)}>
+                      Editar
+                    </Button>
+                    <Button type="button" variant="outline" className="rounded-full" onClick={() => void excluir(intencao)}>
+                      Excluir
+                    </Button>
+                  </div>
+                ) : null}
               </article>
             ))}
           </div>

@@ -34,11 +34,9 @@ export default async function ChamadosPage({ searchParams }: PageProps) {
 
   const params = await searchParams;
   const urlSearchParams = montarSearchParams(params);
-  const [dados, setores, responsaveis] = await Promise.all([
-    obterChamados(urlSearchParams, sessao),
-    obterSetoresParaSelecao(),
-    listarResponsaveis(),
-  ]);
+  const dados = await obterChamados(urlSearchParams, sessao);
+  const setores = await obterSetoresParaSelecao();
+  const responsaveis = await listarResponsaveis();
 
   return (
     <SystemLayout sessao={sessao}>

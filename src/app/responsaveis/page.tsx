@@ -14,6 +14,10 @@ export default async function ResponsaveisPage() {
     redirect("/login");
   }
 
+  if (sessao.perfil !== "ADMINISTRADOR") {
+    redirect("/dashboard");
+  }
+
   const responsaveis = await listarResponsaveis();
 
   return (

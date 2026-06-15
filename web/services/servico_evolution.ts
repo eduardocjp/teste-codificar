@@ -266,10 +266,8 @@ export async function obterStatusEvolution(): Promise<ResultadoAcao<DadosConexao
     return configuracao;
   }
 
-  const [estadoEvolution, configuracaoWhatsapp] = await Promise.all([
-    consultarEstado(configuracao.dados),
-    obterConfiguracaoWhatsapp(),
-  ]);
+  const estadoEvolution = await consultarEstado(configuracao.dados);
+  const configuracaoWhatsapp = await obterConfiguracaoWhatsapp();
   const { estado } = estadoEvolution;
 
   const numeroConectado = estado === "conectada"

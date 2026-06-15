@@ -96,7 +96,7 @@ export async function controllerAtualizarChamado(
 
   try {
     const body = await lerJsonSeguro(request);
-    const resultado = await salvarAtualizacaoChamado(id, body);
+    const resultado = await salvarAtualizacaoChamado(id, body, sessao.dados);
 
     return NextResponse.json(resultado, { status: resultado.sucesso ? 200 : 400 });
   } catch (erro) {

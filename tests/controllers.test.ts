@@ -265,6 +265,7 @@ describe("controllers de intenção e solver", () => {
     const response = await controllerCriarIntencao(requestJson({ nome: "Rede" }));
 
     expect(response.status).toBe(201);
+    expect(authMock.validarSessaoAtiva).toHaveBeenCalledWith(["ADMINISTRADOR", "ATENDENTE"]);
   });
 
   it("controllerAtualizarIntencao retorna 400 em falha de validação", async () => {
@@ -325,6 +326,11 @@ describe("controllers de chamados", () => {
     const response = await controllerAtualizarChamado(requestJson({ status: "FECHADO" }), "chamado");
 
     expect(response.status).toBe(200);
+    expect(chamadoServicoMock.salvarAtualizacaoChamado).toHaveBeenCalledWith(
+      "chamado",
+      { status: "FECHADO" },
+      sessaoOk.dados,
+    );
   });
 
   it("controllerDistribuicao rejeita body inválido", async () => {

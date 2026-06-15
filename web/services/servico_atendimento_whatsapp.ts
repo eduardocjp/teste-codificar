@@ -32,6 +32,7 @@ type SessaoWhatsappAtiva = {
   estado: "AGUARDANDO_DADOS" | "CHAMADO_CRIADO" | "EM_ATENDIMENTO" | "EXPIRADA";
   chamadoId: string | null;
   expiraEm: Date;
+  finalizadoEm: Date | null;
 };
 
 type ResultadoProcessamentoWhatsapp = {
@@ -65,6 +66,7 @@ async function obterSessaoAtiva(telefone: string, agora: Date): Promise<SessaoWh
     where: {
       telefoneCliente: telefone,
       estado: { not: "EXPIRADA" },
+      finalizadoEm: null,
       expiraEm: { lte: agora },
     },
     data: { estado: "EXPIRADA" },
@@ -74,6 +76,7 @@ async function obterSessaoAtiva(telefone: string, agora: Date): Promise<SessaoWh
     where: {
       telefoneCliente: telefone,
       estado: { not: "EXPIRADA" },
+      finalizadoEm: null,
       expiraEm: { gt: agora },
     },
     orderBy: { ultimaInteracaoEm: "desc" },
@@ -83,6 +86,7 @@ async function obterSessaoAtiva(telefone: string, agora: Date): Promise<SessaoWh
       estado: true,
       chamadoId: true,
       expiraEm: true,
+      finalizadoEm: true,
     },
   });
 }

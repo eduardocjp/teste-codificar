@@ -15,7 +15,8 @@ export default async function NovoChamadoPage() {
     redirect("/login");
   }
 
-  const [setores, responsaveis] = await Promise.all([obterSetoresParaSelecao(), listarResponsaveis()]);
+  const setores = await obterSetoresParaSelecao();
+  const responsaveis = await listarResponsaveis();
 
   return (
     <SystemLayout sessao={sessao}>

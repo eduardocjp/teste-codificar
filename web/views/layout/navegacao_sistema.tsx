@@ -20,7 +20,7 @@ type LinkNavegacao = {
   href: string;
   label: string;
   icon: ComponentType<SVGProps<SVGSVGElement>>;
-  admin: boolean;
+  perfis: SessaoUsuario["perfil"][];
 };
 
 type NavegacaoSistemaProps = {
@@ -28,13 +28,13 @@ type NavegacaoSistemaProps = {
 };
 
 const links: LinkNavegacao[] = [
-  { href: "/dashboard", label: "Dashboard", icon: Gauge, admin: false },
-  { href: "/chamados", label: "Chamados", icon: Inbox, admin: false },
-  { href: "/responsaveis", label: "Responsáveis", icon: Users, admin: false },
-  { href: "/simulador", label: "Simulador", icon: Bot, admin: false },
-  { href: "/conversas", label: "Conversas", icon: MessageSquareText, admin: false },
-  { href: "/configuracoes", label: "Configurações", icon: Settings, admin: false },
-  { href: "/admin", label: "Admin", icon: Shield, admin: true },
+  { href: "/dashboard", label: "Dashboard", icon: Gauge, perfis: ["ADMINISTRADOR", "ATENDENTE"] },
+  { href: "/chamados", label: "Chamados", icon: Inbox, perfis: ["ADMINISTRADOR", "ATENDENTE"] },
+  { href: "/responsaveis", label: "Responsáveis", icon: Users, perfis: ["ADMINISTRADOR"] },
+  { href: "/simulador", label: "Simulador", icon: Bot, perfis: ["ADMINISTRADOR", "ATENDENTE"] },
+  { href: "/conversas", label: "Conversas", icon: MessageSquareText, perfis: ["ADMINISTRADOR", "ATENDENTE"] },
+  { href: "/configuracoes", label: "Configurações", icon: Settings, perfis: ["ADMINISTRADOR", "ATENDENTE"] },
+  { href: "/admin", label: "Admin", icon: Shield, perfis: ["ADMINISTRADOR"] },
 ];
 
 function linkEstaAtivo(pathname: string, href: string): boolean {
@@ -54,7 +54,7 @@ export function NavegacaoSistema({ perfil }: NavegacaoSistemaProps) {
   return (
     <nav className="flex gap-2 overflow-x-auto rounded-[28px] bg-snow p-2 shadow-sm ring-1 ring-fog lg:flex-col lg:overflow-visible">
       {links
-        .filter((link) => !link.admin || perfil === "ADMINISTRADOR")
+        .filter((link) => link.perfis.includes(perfil))
         .map((link) => {
           const Icone = link.icon;
           const ativo = linkEstaAtivo(pathname, link.href);

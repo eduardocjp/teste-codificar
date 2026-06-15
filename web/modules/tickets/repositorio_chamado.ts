@@ -80,16 +80,14 @@ export async function listarChamados(filtros: DadosFiltroChamado, sessao: Sessao
   const where = montarWhere(filtros, sessao);
   const skip = (filtros.pagina - 1) * filtros.limite;
 
-  const [chamados, total] = await prisma.$transaction([
-    prisma.chamado.findMany({
-      where,
-      include: includeChamado,
-      orderBy: montarOrdenacao(filtros.ordenarPor),
-      skip,
-      take: filtros.limite,
-    }),
-    prisma.chamado.count({ where }),
-  ]);
+  const chamados = await prisma.chamado.findMany({
+    where,
+    include: includeChamado,
+    orderBy: montarOrdenacao(filtros.ordenarPor),
+    skip,
+    take: filtros.limite,
+  });
+  const total = await prisma.chamado.count({ where });
 
   return { chamados, total };
 }

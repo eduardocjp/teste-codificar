@@ -32,7 +32,7 @@ export async function controllerListarIntencoes(request: NextRequest): Promise<N
  * Cria uma nova intenção.
  */
 export async function controllerCriarIntencao(request: NextRequest): Promise<NextResponse> {
-  const sessao = await validarSessaoAtiva(["ADMINISTRADOR"]);
+  const sessao = await validarSessaoAtiva(["ADMINISTRADOR", "ATENDENTE"]);
 
   if (!sessao.sucesso) {
     return NextResponse.json(sessao, { status: 403 });

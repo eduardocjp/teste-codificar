@@ -79,16 +79,16 @@ export async function atribuirChamadoAutomaticamente(chamadoId: string, setorId:
 
   const agora = new Date();
 
-  await prisma.$transaction([
-    prisma.chamado.update({
+  await prisma.$transaction(async (transacao) => {
+    await transacao.chamado.update({
       where: { id: chamadoId },
       data: { responsavelId: responsavel.id },
-    }),
-    prisma.usuario.update({
+    });
+    await transacao.usuario.update({
       where: { id: responsavel.id },
       data: { ultimaAtribuicao: agora },
-    }),
-  ]);
+    });
+  });
 
   return responsavel;
 }

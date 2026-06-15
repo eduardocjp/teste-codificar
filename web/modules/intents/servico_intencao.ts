@@ -61,10 +61,8 @@ export async function analisarMensagemIntentSolver(
     };
   }
 
-  const [intencoes, setorTriagem] = await Promise.all([
-    listarIntencoesAtivas(),
-    obterSetorTriagemObrigatorio(),
-  ]);
+  const intencoes = await listarIntencoesAtivas();
+  const setorTriagem = await obterSetorTriagemObrigatorio();
 
   const origemAnalise = validacao.data.origem ?? "MANUAL";
   const intencoesDoCanal = intencoes
