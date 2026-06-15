@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import { QrCode } from "../../utils/icons";
 import { Button } from "../ui/button";
@@ -57,6 +57,20 @@ async function lerResposta<T>(response: Response): Promise<RespostaApi<T>> {
   return (await response.json()) as RespostaApi<T>;
 }
 
+function obterAssinaturaDados(dados: DadosConexaoEvolution): string {
+  return [
+    dados.instanciaNome,
+    dados.estado,
+    dados.qrcodeBase64 ?? "",
+    dados.codigoPareamento ?? "",
+    dados.mensagem,
+    dados.numeroConectado ?? "",
+    dados.qrExpiraEm ?? "",
+    dados.novaTentativaQrEm ?? "",
+    dados.bloqueadoPorRateLimit ? "bloqueado" : "liberado",
+  ].join("|");
+}
+
 /**
  * Exibe o QR Code de conexão solicitado ao backend da aplicação.
  */
@@ -67,29 +81,65 @@ export function QrCodeConexao({ aberto, onOpenChange, onConectado }: QrCodeConex
   const [erro, setErro] = useState<string | null>(null);
   const [segundosQr, setSegundosQr] = useState(0);
   const [segundosBloqueio, setSegundosBloqueio] = useState(0);
+  const assinaturaDadosRef = useRef<string | null>(null);
+  const consultaEstadoEmAndamentoRef = useRef(false);
+  const conexaoConfirmadaRef = useRef(false);
+  const onConectadoRef = useRef(onConectado);
+  const onOpenChangeRef = useRef(onOpenChange);
 
-  const aplicarDadosConexao = useCallback((dadosAtualizados: DadosConexaoEvolution): void => {
-    setDados(dadosAtualizados);
-    setMensagem(dadosAtualizados.mensagem);
-    setSegundosQr(calcularSegundosRestantes(dadosAtualizados.qrExpiraEm));
-    setSegundosBloqueio(calcularSegundosRestantes(dadosAtualizados.novaTentativaQrEm));
-
-    if (dadosAtualizados.estado === "conectada") {
-      setMensagem("WhatsApp conectado com sucesso.");
-      onConectado();
-      onOpenChange(false);
-    }
+  useEffect(() => {
+    onConectadoRef.current = onConectado;
+    onOpenChangeRef.current = onOpenChange;
   }, [onConectado, onOpenChange]);
 
-  const consultarEstado = useCallback(async (): Promise<void> => {
-    const response = await fetch("/api/whatsapp/estado", { method: "GET" });
-    const resultado = await lerResposta<DadosConexaoEvolution>(response);
+  const resetarEstadoModal = useCallback((): void => {
+    setCarregando(false);
+    setDados(null);
+    setMensagem(null);
+    setErro(null);
+    setSegundosQr(0);
+    setSegundosBloqueio(0);
+    assinaturaDadosRef.current = null;
+    consultaEstadoEmAndamentoRef.current = false;
+    conexaoConfirmadaRef.current = false;
+  }, []);
 
-    if (!resultado.sucesso) {
+  const aplicarDadosConexao = useCallback((dadosAtualizados: DadosConexaoEvolution): void => {
+    const assinatura = obterAssinaturaDados(dadosAtualizados);
+
+    if (assinaturaDadosRef.current !== assinatura) {
+      assinaturaDadosRef.current = assinatura;
+      setDados(dadosAtualizados);
+      setMensagem(dadosAtualizados.mensagem);
+      setSegundosQr(calcularSegundosRestantes(dadosAtualizados.qrExpiraEm));
+      setSegundosBloqueio(calcularSegundosRestantes(dadosAtualizados.novaTentativaQrEm));
+    }
+
+    if (dadosAtualizados.estado === "conectada" && !conexaoConfirmadaRef.current) {
+      conexaoConfirmadaRef.current = true;
+      setMensagem("WhatsApp conectado com sucesso.");
+      onConectadoRef.current();
+      onOpenChangeRef.current(false);
+    }
+  }, []);
+
+  const consultarEstado = useCallback(async (): Promise<void> => {
+    if (consultaEstadoEmAndamentoRef.current) {
       return;
     }
 
-    aplicarDadosConexao(resultado.dados);
+    consultaEstadoEmAndamentoRef.current = true;
+
+    try {
+      const response = await fetch("/api/whatsapp/estado", { method: "GET" });
+      const resultado = await lerResposta<DadosConexaoEvolution>(response);
+
+      if (resultado.sucesso) {
+        aplicarDadosConexao(resultado.dados);
+      }
+    } finally {
+      consultaEstadoEmAndamentoRef.current = false;
+    }
   }, [aplicarDadosConexao]);
 
   const solicitarQrCode = useCallback(async (): Promise<void> => {
@@ -111,7 +161,9 @@ export function QrCodeConexao({ aberto, onOpenChange, onConectado }: QrCodeConex
 
   useEffect(() => {
     if (!aberto) {
-      return;
+      const timeoutReset = window.setTimeout(() => resetarEstadoModal(), 0);
+
+      return () => window.clearTimeout(timeoutReset);
     }
 
     const timeout = window.setTimeout(() => {
@@ -119,7 +171,7 @@ export function QrCodeConexao({ aberto, onOpenChange, onConectado }: QrCodeConex
     }, 0);
 
     return () => window.clearTimeout(timeout);
-  }, [aberto, solicitarQrCode]);
+  }, [aberto, resetarEstadoModal, solicitarQrCode]);
 
   useEffect(() => {
     if (!aberto) {
@@ -172,7 +224,7 @@ export function QrCodeConexao({ aberto, onOpenChange, onConectado }: QrCodeConex
         <div className="grid gap-4 md:grid-cols-[240px_1fr]">
           <div className="rounded-[24px] bg-mist p-4">
             <div className="flex aspect-square w-full items-center justify-center rounded-[18px] bg-snow p-3 ring-1 ring-fog">
-              {carregando ? (
+              {carregando && !dados?.qrcodeBase64 ? (
                 <Skeleton className="h-full w-full rounded-[18px]" />
               ) : dados?.qrcodeBase64 ? (
                 // eslint-disable-next-line @next/next/no-img-element
@@ -192,7 +244,7 @@ export function QrCodeConexao({ aberto, onOpenChange, onConectado }: QrCodeConex
             <dl className="mt-4 grid gap-2">
               <div className="flex justify-between gap-3">
                 <dt>Status</dt>
-                <dd className="font-medium text-ink">{dados?.estado ?? "solicitando"}</dd>
+                <dd className="font-medium text-ink">{dados?.estado ?? (carregando ? "solicitando" : "aguardando")}</dd>
               </div>
               <div className="flex justify-between gap-3">
                 <dt>QR expira em</dt>
@@ -219,7 +271,7 @@ export function QrCodeConexao({ aberto, onOpenChange, onConectado }: QrCodeConex
             disabled={carregando || segundosBloqueio > 0}
             onClick={() => void solicitarQrCode()}
           >
-            Atualizar QR Code
+            {carregando ? "Atualizando..." : "Atualizar QR Code"}
           </Button>
         </DialogFooter>
       </DialogContent>

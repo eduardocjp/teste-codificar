@@ -46,6 +46,7 @@ vi.mock("../web/utils/logger", () => ({
 
 import {
   MENSAGEM_ESTRUTURA_SOLICITACAO_WHATSAPP,
+  MENSAGEM_INSTRUCAO_COPIA_WHATSAPP,
   MENSAGEM_PRIMEIRO_CONTATO_PADRAO,
   extrairSolicitacaoWhatsapp,
 } from "../web/services/servico_processamento_mensagem";
@@ -70,7 +71,7 @@ function configuracao(overrides: Record<string, unknown> = {}) {
     conectado: true,
     numeroConectado: "5511888888888",
     numeroAviso: null,
-    mensagemPrimeiroContato: "Olá. Envie as informações solicitadas na próxima mensagem.",
+    mensagemPrimeiroContato: "Descreva seu problema desta forma, em uma única mensagem:",
     mensagemConfirmacaoChamado: "Chamado {protocolo} criado para {assunto} no setor {setor}.",
     ultimaSolicitacaoQrEm: null,
     novaTentativaQrEm: null,
@@ -220,7 +221,7 @@ describe("configuração do WhatsApp", () => {
     await salvarConfiguracaoWhatsapp({
       ativo: false,
       numeroAviso: "(11) 98888-7777",
-      mensagemPrimeiroContato: "Olá. Envie as informações solicitadas na próxima mensagem.",
+      mensagemPrimeiroContato: "Descreva seu problema desta forma, em uma única mensagem:",
       mensagemConfirmacaoChamado: "Protocolo {protocolo} criado.",
     });
 
@@ -229,7 +230,7 @@ describe("configuração do WhatsApp", () => {
         data: expect.objectContaining({
           ativo: false,
           numeroAviso: "11988887777",
-          mensagemPrimeiroContato: "Olá. Envie as informações solicitadas na próxima mensagem.",
+          mensagemPrimeiroContato: "Descreva seu problema desta forma, em uma única mensagem:",
           mensagemConfirmacaoChamado: "Protocolo {protocolo} criado.",
         }),
       }),
@@ -244,10 +245,12 @@ describe("configuração do WhatsApp", () => {
   });
 
   it("mantém mensagem padrão configurável e estrutura fixa copiável", () => {
-    expect(MENSAGEM_PRIMEIRO_CONTATO_PADRAO).toContain("próxima mensagem");
-    expect(MENSAGEM_ESTRUTURA_SOLICITACAO_WHATSAPP).toContain("Copie essa mensagem");
+    expect(MENSAGEM_PRIMEIRO_CONTATO_PADRAO).toContain("Descreva seu problema");
+    expect(MENSAGEM_INSTRUCAO_COPIA_WHATSAPP).toBe("Copie a mensagem abaixo no corpo da sua mensagem:");
     expect(MENSAGEM_ESTRUTURA_SOLICITACAO_WHATSAPP).toContain("Informe seu nome:");
-    expect(MENSAGEM_ESTRUTURA_SOLICITACAO_WHATSAPP).toContain("------------");
+    expect(MENSAGEM_ESTRUTURA_SOLICITACAO_WHATSAPP).toContain("Assunto:");
+    expect(MENSAGEM_ESTRUTURA_SOLICITACAO_WHATSAPP).toContain("Descrição do problema:");
+    expect(MENSAGEM_ESTRUTURA_SOLICITACAO_WHATSAPP).not.toContain("------------");
   });
 
   it("rejeita número opcional inválido", async () => {
@@ -298,7 +301,11 @@ describe("fluxo automático por WhatsApp", () => {
       1,
       expect.objectContaining({
         tipo: "ORIENTACAO_INICIAL",
-        conteudo: configuracao().mensagemPrimeiroContato,
+        conteudo: [
+          configuracao().mensagemPrimeiroContato,
+          "",
+          MENSAGEM_INSTRUCAO_COPIA_WHATSAPP,
+        ].join("\n"),
       }),
     );
     expect(evolutionMock.enviarMensagemEvolution).toHaveBeenNthCalledWith(

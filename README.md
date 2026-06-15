@@ -42,7 +42,12 @@ A aplicação centraliza solicitações internas, permite o acompanhamento dos c
 17. Leia o QR Code utilizando o WhatsApp que será usado como número de suporte.
 18. Aguarde o sistema confirmar que a instância foi conectada.
 19. Utilizando outro número de WhatsApp, envie uma mensagem para o número conectado ao suporte.
-20. O bot responderá solicitando que a demanda seja enviada em uma única mensagem, seguindo esta estrutura:
+20. O bot responderá em duas mensagens:
+
+    * a mensagem configurável pelo administrador, seguida da instrução `Copie a mensagem abaixo no corpo da sua mensagem:`;
+    * a estrutura obrigatória que deve ser copiada e preenchida pelo cliente.
+
+Estrutura obrigatória:
 
 ```
 Informe seu nome:

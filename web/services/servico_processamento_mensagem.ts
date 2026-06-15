@@ -1,19 +1,15 @@
 import { normalizarTexto } from "../utils/utils";
 
 export const MENSAGEM_PRIMEIRO_CONTATO_PADRAO = [
-  "Olá. Para abrir seu chamado, preciso que você envie as informações no modelo da próxima mensagem.",
-  "Copie a estrutura enviada em seguida e responda preenchendo seus dados.",
+  "Descreva seu problema desta forma, em uma única mensagem:",
 ].join("\n");
 
+export const MENSAGEM_INSTRUCAO_COPIA_WHATSAPP = "Copie a mensagem abaixo no corpo da sua mensagem:";
+
 export const MENSAGEM_ESTRUTURA_SOLICITACAO_WHATSAPP = [
-  "Copie essa mensagem e responda com ela no corpo.",
-  "",
-  "Descreva seu problema desta forma, em uma única mensagem:",
-  "------------",
   "Informe seu nome:",
   "Assunto:",
   "Descrição do problema:",
-  "------------",
 ].join("\n");
 
 export type CampoSolicitacaoWhatsapp = "nome" | "assunto" | "descricao";

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import { toast } from "sonner";
 
 import { CheckCircle2, CircleAlert, QrCode, Smartphone } from "../../utils/icons";
@@ -108,6 +108,31 @@ async function lerResposta<T>(response: Response): Promise<RespostaApi<T>> {
     return (await response.json()) as RespostaApi<T>;
 }
 
+function obterAssinaturaConfiguracao(dados: DadosConfiguracaoWhatsapp | null): string {
+    if (!dados) {
+        return "sem-configuracao";
+    }
+
+    return [
+        dados.ativo ? "ativo" : "inativo",
+        dados.conectado ? "conectado" : "desconectado",
+        dados.numeroConectado ?? "",
+        dados.numeroAviso ?? "",
+        dados.mensagemPrimeiroContato,
+        dados.mensagemConfirmacaoChamado,
+        dados.novaTentativaQrEm ?? "",
+        dados.instanciaNome,
+        dados.apiHabilitada ? "api-habilitada" : "api-desabilitada",
+    ].join("|");
+}
+
+function configuracaoWhatsappIgual(
+    atual: DadosConfiguracaoWhatsapp | null,
+    proxima: DadosConfiguracaoWhatsapp,
+): boolean {
+    return obterAssinaturaConfiguracao(atual) === obterAssinaturaConfiguracao(proxima);
+}
+
 /**
  * Modal administrativo para configuração da automação de WhatsApp via Evolution.
  */
@@ -124,6 +149,22 @@ export function WhatsappConfig() {
     const [mensagemPrimeiroContato, setMensagemPrimeiroContato] = useState("");
     const [mensagemConfirmacaoChamado, setMensagemConfirmacaoChamado] = useState("");
     const [erro, setErro] = useState<string | null>(null);
+    const configuracaoRef = useRef<DadosConfiguracaoWhatsapp | null>(null);
+
+    const atualizarConfiguracaoSeAlterada = useCallback((dadosAtualizados: DadosConfiguracaoWhatsapp): void => {
+        setConfiguracao((configuracaoAtual) => {
+            if (configuracaoWhatsappIgual(configuracaoAtual, dadosAtualizados)) {
+                return configuracaoAtual;
+            }
+
+            configuracaoRef.current = dadosAtualizados;
+            return dadosAtualizados;
+        });
+    }, []);
+
+    useEffect(() => {
+        configuracaoRef.current = configuracao;
+    }, [configuracao]);
 
     const sincronizarEstadoConfiguracao = useCallback(async (
         dadosBase: DadosConfiguracaoWhatsapp,
@@ -158,13 +199,15 @@ export function WhatsappConfig() {
     }, []);
 
     const consultarEstadoAtual = useCallback(async (): Promise<void> => {
-        if (!configuracao?.apiHabilitada) {
+        const configuracaoAtual = configuracaoRef.current;
+
+        if (!configuracaoAtual?.apiHabilitada) {
             return;
         }
 
-        const dadosAtualizados = await sincronizarEstadoConfiguracao(configuracao);
-        setConfiguracao(dadosAtualizados);
-    }, [configuracao, sincronizarEstadoConfiguracao]);
+        const dadosAtualizados = await sincronizarEstadoConfiguracao(configuracaoAtual);
+        atualizarConfiguracaoSeAlterada(dadosAtualizados);
+    }, [atualizarConfiguracaoSeAlterada, sincronizarEstadoConfiguracao]);
 
     async function carregarConfiguracao(): Promise<void> {
         setCarregando(true);
@@ -182,6 +225,7 @@ export function WhatsappConfig() {
         const dadosAtualizados = await sincronizarEstadoConfiguracao(resultado.dados);
 
         setCarregando(false);
+        configuracaoRef.current = dadosAtualizados;
         setConfiguracao(dadosAtualizados);
         setAtivo(dadosAtualizados.ativo);
         setNumeroAviso(dadosAtualizados.numeroAviso ?? "");
@@ -233,6 +277,7 @@ export function WhatsappConfig() {
             return;
         }
 
+        configuracaoRef.current = resultado.dados;
         setConfiguracao(resultado.dados);
         setMensagemConfirmacaoChamado(resultado.dados.mensagemConfirmacaoChamado);
         toast.success("Configuração do WhatsApp salva.");

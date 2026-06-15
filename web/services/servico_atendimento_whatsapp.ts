@@ -11,6 +11,7 @@ import { enviarMensagemEvolution } from "./servico_evolution";
 import {
   extrairSolicitacaoWhatsapp,
   MENSAGEM_ESTRUTURA_SOLICITACAO_WHATSAPP,
+  MENSAGEM_INSTRUCAO_COPIA_WHATSAPP,
 } from "./servico_processamento_mensagem";
 
 const TEMPO_EXPIRACAO_COLETA_MS = 10 * 60 * 1000;
@@ -120,7 +121,12 @@ async function registrarConversa(dados: {
 }
 
 async function enviarOrientacao(sessaoId: string, telefone: string, mensagemConfiguravel: string): Promise<void> {
-  const mensagens = [mensagemConfiguravel, MENSAGEM_ESTRUTURA_SOLICITACAO_WHATSAPP];
+  const primeiraMensagem = [
+    mensagemConfiguravel.trim(),
+    "",
+    MENSAGEM_INSTRUCAO_COPIA_WHATSAPP,
+  ].join("\n");
+  const mensagens = [primeiraMensagem, MENSAGEM_ESTRUTURA_SOLICITACAO_WHATSAPP];
 
   for (const conteudo of mensagens) {
     const envio = await enviarMensagemEvolution({

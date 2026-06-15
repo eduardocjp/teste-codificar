@@ -38,7 +38,7 @@ function configuracaoWhatsapp(overrides: Record<string, unknown> = {}) {
     conectado: false,
     numeroConectado: null,
     numeroAviso: null,
-    mensagemPrimeiroContato: "Informe seu nome:\nAssunto:\nDescrição do problema:",
+    mensagemPrimeiroContato: "Descreva seu problema desta forma, em uma única mensagem:",
     mensagemConfirmacaoChamado: "Chamado {protocolo} criado para {assunto} no setor {setor}.",
     ultimaSolicitacaoQrEm: null,
     novaTentativaQrEm: null,
