@@ -15,7 +15,7 @@ export function LoginView() {
             Acesse o painel para acompanhar e resolver demandas internas.
           </h1>
           <p className="mt-5 max-w-xl text-base leading-7 text-steel">
-            Use os usuários do seed para testar o MVP local depois de configurar o Supabase PostgreSQL.
+            Use as credenciais fornecidas pelo responsável pelo teste ou configure usuários locais pelo seed.
           </p>
         </section>
 
@@ -24,11 +24,6 @@ export function LoginView() {
           <p className="mt-2 text-sm text-steel">Informe suas credenciais para continuar.</p>
           <div className="mt-6">
             <FormularioLogin />
-          </div>
-          <div className="mt-5 rounded-[24px] bg-fog p-4 text-sm text-graphite">
-            <p className="font-medium">Demonstração após seed</p>
-            <p className="mt-1">admin@empresa.com / admin123</p>
-            <p>ana@empresa.com / atendente123</p>
           </div>
         </section>
       </div>

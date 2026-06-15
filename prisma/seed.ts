@@ -107,6 +107,16 @@ const intencoesSeed = [
 
 const canaisPadraoIntencao = ["MANUAL", "SIMULADOR", "WHATSAPP", "EMAIL"] as const;
 
+function obterSenhaSeed(nomeVariavel: string): string {
+  const senha = process.env[nomeVariavel]?.trim();
+
+  if (!senha) {
+    throw new Error(`Configure ${nomeVariavel} no ambiente local antes de executar o seed.`);
+  }
+
+  return senha;
+}
+
 async function main(): Promise<void> {
   const setores = new Map<string, string>();
 
@@ -128,8 +138,9 @@ async function main(): Promise<void> {
     setores.set(salvo.nome, salvo.id);
   }
 
-  const senhaAdmin = await gerarHashSenha("admin123");
-  const senhaAtendente = await gerarHashSenha("atendente123");
+  const senhaAdmin = await gerarHashSenha(obterSenhaSeed("SEED_SENHA_ADMIN"));
+  const senhaAna = await gerarHashSenha(obterSenhaSeed("SEED_SENHA_ANA"));
+  const senhaAtendente = await gerarHashSenha(obterSenhaSeed("SEED_SENHA_ATENDENTE"));
 
   await prisma.usuario.upsert({
     where: { email: "admin@empresa.com" },
@@ -161,7 +172,7 @@ async function main(): Promise<void> {
       where: { email },
       update: {
         nome,
-        senhaHash: senhaAtendente,
+        senhaHash: email === "ana@empresa.com" ? senhaAna : senhaAtendente,
         perfil: "ATENDENTE",
         ativo: true,
         setorId: setores.get(setorNome),
@@ -169,7 +180,7 @@ async function main(): Promise<void> {
       create: {
         nome,
         email,
-        senhaHash: senhaAtendente,
+        senhaHash: email === "ana@empresa.com" ? senhaAna : senhaAtendente,
         perfil: "ATENDENTE",
         ativo: true,
         setorId: setores.get(setorNome),

@@ -51,8 +51,15 @@ export function gerarTokenSeguro(): string {
 }
 
 /**
+ * Aplica SHA-256 a valores sensíveis antes de persistir.
+ */
+export function gerarHashSha256(valor: string): string {
+  return createHash("sha256").update(valor).digest("hex");
+}
+
+/**
  * Aplica SHA-256 ao token antes de persistir no banco.
  */
 export function gerarHashToken(token: string): string {
-  return createHash("sha256").update(token).digest("hex");
+  return gerarHashSha256(token);
 }

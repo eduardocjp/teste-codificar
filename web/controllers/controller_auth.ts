@@ -3,12 +3,34 @@ import { z } from "zod";
 
 import { autenticarUsuario, encerrarSessaoAtual, obterConfiguracaoCookieSessao } from "../lib/auth";
 import { lerJsonSeguro, mapearErrosZod } from "../lib/respostas";
+import {
+  limparRateLimitLogin,
+  registrarFalhaLogin,
+  verificarRateLimitLogin,
+} from "../services/servico_rate_limit_login";
 import { logError } from "../utils/logger";
 
 const schemaLogin = z.object({
   email: z.string().trim().email("Informe um e-mail válido."),
   senha: z.string().min(1, "Informe a senha."),
 });
+
+function respostaRateLimit(tentarNovamenteEm: Date | null): NextResponse {
+  const response = NextResponse.json(
+    {
+      sucesso: false,
+      mensagem: "Muitas tentativas de login. Aguarde 60 segundos e tente novamente.",
+    },
+    { status: 429 },
+  );
+
+  if (tentarNovamenteEm) {
+    const segundos = Math.max(1, Math.ceil((tentarNovamenteEm.getTime() - Date.now()) / 1000));
+    response.headers.set("Retry-After", String(segundos));
+  }
+
+  return response;
+}
 
 /**
  * Controller do login com sessão opaca em cookie HTTP-only.
@@ -29,11 +51,25 @@ export async function controllerLogin(request: NextRequest): Promise<NextRespons
       );
     }
 
+    const rateLimit = await verificarRateLimitLogin(request, validacao.data.email);
+
+    if (!rateLimit.permitido) {
+      return respostaRateLimit(rateLimit.tentarNovamenteEm);
+    }
+
     const resultado = await autenticarUsuario(validacao.data.email, validacao.data.senha);
 
     if (!resultado.sucesso) {
+      const falha = await registrarFalhaLogin(request, validacao.data.email);
+
+      if (falha.tentarNovamenteEm) {
+        return respostaRateLimit(falha.tentarNovamenteEm);
+      }
+
       return NextResponse.json(resultado, { status: 401 });
     }
+
+    await limparRateLimitLogin(request, validacao.data.email);
 
     const configCookie = obterConfiguracaoCookieSessao(resultado.dados.sessao.expiraEm);
     const response = NextResponse.json({

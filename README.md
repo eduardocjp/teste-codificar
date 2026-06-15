@@ -11,17 +11,14 @@ A aplicação centraliza solicitações internas, permite o acompanhamento dos c
 
 ### Acesso de demonstração
 
-* **E-mail:** `admin@empresa.com`
-* **Senha:** `admin123`
-
-> As credenciais acima são destinadas exclusivamente à demonstração. Elas devem ser substituídas antes de qualquer uso real.
+As credenciais de avaliação não são publicadas no repositório. Elas devem ser fornecidas diretamente pelo responsável pelo teste.
 
 ---
 
 ## Como avaliar rapidamente
 
 1. Acesse a aplicação publicada.
-2. Entre com `admin@empresa.com` e `admin123`.
+2. Entre com as credenciais de avaliação fornecidas fora do repositório.
 3. Acesse a página **Chamados**.
 4. Clique em **Novo chamado**.
 5. Informe a solicitação: `Meu computador travou e não inicia`.
@@ -674,17 +671,15 @@ O projeto não usa Vercel Cron. O agendamento recorrente do WhatsApp é feito pe
 
 ## Usuários de demonstração
 
-O seed cria os seguintes usuários:
+O seed cria os seguintes usuários, mas as senhas não ficam versionadas. Configure `SEED_SENHA_ADMIN`, `SEED_SENHA_ANA` e `SEED_SENHA_ATENDENTE` no ambiente local antes de executar o seed.
 
-| E-mail              | Senha          | Perfil        |
-| ------------------- | -------------- | ------------- |
-| `admin@empresa.com` | `admin123`     | ADMINISTRADOR |
-| `ana@empresa.com`   | `atendente123` | ATENDENTE     |
-| `bruno@empresa.com` | `atendente123` | ATENDENTE     |
-| `carla@empresa.com` | `atendente123` | ATENDENTE     |
-| `diego@empresa.com` | `atendente123` | ATENDENTE     |
-
-As senhas devem ser substituídas antes de qualquer uso real.
+| E-mail              | Perfil        |
+| ------------------- | ------------- |
+| `admin@empresa.com` | ADMINISTRADOR |
+| `ana@empresa.com`   | ATENDENTE     |
+| `bruno@empresa.com` | ATENDENTE     |
+| `carla@empresa.com` | ATENDENTE     |
+| `diego@empresa.com` | ATENDENTE     |
 
 ---
 
@@ -963,6 +958,7 @@ E registre os resultados reais da última execução.
 * Cookies de sessão são HTTP-only.
 * Tokens de sessão são persistidos com hash SHA-256.
 * Senhas são persistidas com hash `scrypt`.
+* O login possui rate limit de 3 tentativas por 60 segundos por combinação de IP e e-mail, persistida apenas com hashes.
 * Webhooks são protegidos por segredo ou Basic Auth.
 * Rotas administrativas validam sessão e perfil.
 * O Prisma é utilizado somente no servidor.
@@ -971,7 +967,7 @@ E registre os resultados reais da última execução.
 
 Antes de qualquer uso real:
 
-* troque as senhas do seed;
+* informe senhas de seed somente por variáveis locais;
 * rotacione os segredos;
 * configure credenciais próprias;
 * revise permissões;

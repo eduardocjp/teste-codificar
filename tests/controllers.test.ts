@@ -11,6 +11,12 @@ const authMock = vi.hoisted(() => ({
   validarSessaoAtiva: vi.fn(),
 }));
 
+const rateLimitLoginMock = vi.hoisted(() => ({
+  verificarRateLimitLogin: vi.fn(),
+  registrarFalhaLogin: vi.fn(),
+  limparRateLimitLogin: vi.fn(),
+}));
+
 const setorMock = vi.hoisted(() => ({
   obterSetoresParaSelecao: vi.fn(),
 }));
@@ -63,6 +69,7 @@ const atendimentoWhatsappMock = vi.hoisted(() => ({
 }));
 
 vi.mock("../web/lib/auth", () => authMock);
+vi.mock("../web/services/servico_rate_limit_login", () => rateLimitLoginMock);
 vi.mock("../web/modules/setores/servico_setor", () => setorMock);
 vi.mock("../web/modules/responsaveis/servico_responsavel", () => responsavelMock);
 vi.mock("../web/modules/intents/servico_intencao", () => intentSolverMock);
@@ -142,6 +149,9 @@ async function json(response: Response): Promise<Record<string, unknown>> {
 beforeEach(() => {
   vi.clearAllMocks();
   authMock.validarSessaoAtiva.mockResolvedValue(sessaoOk);
+  rateLimitLoginMock.verificarRateLimitLogin.mockResolvedValue({ permitido: true, tentarNovamenteEm: null });
+  rateLimitLoginMock.registrarFalhaLogin.mockResolvedValue({ permitido: true, tentarNovamenteEm: null });
+  rateLimitLoginMock.limparRateLimitLogin.mockResolvedValue(undefined);
   atendimentoWhatsappMock.processarWebhookWhatsapp.mockResolvedValue({ sucesso: true, dados: { acao: "ignorado" } });
 });
 
@@ -159,6 +169,20 @@ describe("controller_auth", () => {
     const response = await controllerLogin(requestJson({ email: "admin@empresa.com", senha: "errada" }));
 
     expect(response.status).toBe(401);
+    expect(rateLimitLoginMock.registrarFalhaLogin).toHaveBeenCalled();
+  });
+
+  it("controllerLogin bloqueia excesso de tentativas antes de autenticar", async () => {
+    rateLimitLoginMock.verificarRateLimitLogin.mockResolvedValueOnce({
+      permitido: false,
+      tentarNovamenteEm: new Date(Date.now() + 60_000),
+    });
+
+    const response = await controllerLogin(requestJson({ email: "admin@empresa.com", senha: "senha-teste" }));
+
+    expect(response.status).toBe(429);
+    expect(response.headers.get("Retry-After")).toBeTruthy();
+    expect(authMock.autenticarUsuario).not.toHaveBeenCalled();
   });
 
   it("controllerLogin cria cookie em autenticação válida", async () => {
@@ -170,10 +194,11 @@ describe("controller_auth", () => {
       },
     });
 
-    const response = await controllerLogin(requestJson({ email: "admin@empresa.com", senha: "admin123" }));
+    const response = await controllerLogin(requestJson({ email: "admin@empresa.com", senha: "senha-teste" }));
 
     expect(response.status).toBe(200);
     expect(response.headers.get("set-cookie")).toContain("sessao_chamados=token-bruto");
+    expect(rateLimitLoginMock.limparRateLimitLogin).toHaveBeenCalled();
   });
 
   it("controllerLogout encerra sessão e redireciona para login", async () => {
