@@ -104,16 +104,22 @@ function buscarValorPorChave(valor: unknown, chaves: string[]): string | null {
 
 function extrairEstado(valor: unknown): EstadoEvolution {
   const estado = buscarValorPorChave(valor, ["state", "connectionStatus", "status"]);
+  const estadoNormalizado = estado?.trim().toLowerCase();
 
-  if (estado === "open" || estado === "connected" || estado === "conectada") {
+  if (estadoNormalizado === "open" || estadoNormalizado === "connected" || estadoNormalizado === "conectada") {
     return "conectada";
   }
 
-  if (estado === "connecting") {
+  if (estadoNormalizado === "connecting" || estadoNormalizado === "connecting...") {
     return "conectando";
   }
 
-  if (estado === "close" || estado === "closed" || estado === "disconnected") {
+  if (
+    estadoNormalizado === "close" ||
+    estadoNormalizado === "closed" ||
+    estadoNormalizado === "disconnected" ||
+    estadoNormalizado === "desconectada"
+  ) {
     return "desconectada";
   }
 

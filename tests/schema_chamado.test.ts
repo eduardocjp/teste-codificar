@@ -8,6 +8,7 @@ const dadosValidos = {
   prioridade: "ALTA",
   status: "ABERTO",
   setorId: "11111111-1111-1111-8111-111111111111",
+  responsavelId: "22222222-2222-4222-8222-222222222222",
   origem: "MANUAL",
 } as const;
 
@@ -28,5 +29,34 @@ describe("schemaCriacaoChamado", () => {
     const resultado = schemaCriacaoChamado.safeParse({ ...dadosValidos, descricao: "Curta" });
 
     expect(resultado.success).toBe(false);
+  });
+
+  it("rejeita criação sem responsável e sem atribuição automática", () => {
+    const resultado = schemaCriacaoChamado.safeParse({
+      ...dadosValidos,
+      responsavelId: undefined,
+      atribuicaoAutomatica: false,
+    });
+
+    expect(resultado.success).toBe(false);
+  });
+
+  it("rejeita responsável manual junto com atribuição automática", () => {
+    const resultado = schemaCriacaoChamado.safeParse({
+      ...dadosValidos,
+      atribuicaoAutomatica: true,
+    });
+
+    expect(resultado.success).toBe(false);
+  });
+
+  it("aceita atribuição automática sem responsável manual", () => {
+    const resultado = schemaCriacaoChamado.safeParse({
+      ...dadosValidos,
+      responsavelId: undefined,
+      atribuicaoAutomatica: true,
+    });
+
+    expect(resultado.success).toBe(true);
   });
 });

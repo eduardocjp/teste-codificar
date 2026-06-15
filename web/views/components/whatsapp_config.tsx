@@ -338,7 +338,7 @@ export function WhatsappConfig() {
                                             className="mt-2 min-h-40 rounded-[14px] bg-snow"
                                         />
                                         <p className="mt-2 text-xs text-steel">
-                                            A mensagem deve conter referências a nome, assunto e descrição para orientar a resposta do cliente.
+                                            Esta mensagem é livre e será enviada antes da estrutura fixa obrigatória com nome, assunto e descrição.
                                         </p>
                                     </div>
 

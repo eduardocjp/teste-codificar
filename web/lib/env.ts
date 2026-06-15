@@ -42,6 +42,11 @@ export function obterEnv(): EnvAplicacao {
  */
 export function obterDatabaseUrl(): string {
   const env = obterEnv();
+  const databaseUrl = env.DATABASE_URL?.trim();
 
-  return env.DATABASE_URL ?? "postgresql://usuario:senha@localhost:5432/mvsoft_eventos";
+  if (!databaseUrl) {
+    throw new Error("DATABASE_URL não configurada. Defina a variável no .env local ou no ambiente da Vercel.");
+  }
+
+  return databaseUrl;
 }

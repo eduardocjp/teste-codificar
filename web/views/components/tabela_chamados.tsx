@@ -60,7 +60,7 @@ export function TabelaChamados({ chamados }: TabelaChamadosProps) {
                   <BadgePrioridade prioridade={chamado.prioridade} />
                 </TableCell>
                 <TableCell>{chamado.setor.nome}</TableCell>
-                <TableCell>{chamado.responsavel?.nome ?? "Sem responsável"}</TableCell>
+                <TableCell>{chamado.responsavel?.nome ?? "Sem atendente disponível"}</TableCell>
                 <TableCell>
                   <BadgeOrigem origem={chamado.origem} />
                 </TableCell>

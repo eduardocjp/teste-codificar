@@ -45,7 +45,7 @@ export function DetalheChamadoView({ chamado }: DetalheChamadoViewProps) {
             </div>
             <div>
               <dt className="text-steel">Responsável</dt>
-              <dd className="font-medium text-ink">{chamado.responsavel?.nome ?? "Sem responsável"}</dd>
+              <dd className="font-medium text-ink">{chamado.responsavel?.nome ?? "Sem atendente disponível"}</dd>
             </div>
             <div>
               <dt className="text-steel">Intenção</dt>

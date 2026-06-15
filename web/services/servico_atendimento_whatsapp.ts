@@ -10,7 +10,7 @@ import { marcarWhatsappConectado, marcarWhatsappDesconectado, obterConfiguracaoW
 import { enviarMensagemEvolution } from "./servico_evolution";
 import {
   extrairSolicitacaoWhatsapp,
-  MENSAGEM_PRIMEIRO_CONTATO_PADRAO,
+  MENSAGEM_ESTRUTURA_SOLICITACAO_WHATSAPP,
 } from "./servico_processamento_mensagem";
 
 const TEMPO_EXPIRACAO_COLETA_MS = 10 * 60 * 1000;
@@ -22,7 +22,7 @@ const MENSAGEM_SOLICITACAO_CORRECAO = [
   "",
   "Envie novamente em uma única mensagem, usando este formato:",
   "",
-  MENSAGEM_PRIMEIRO_CONTATO_PADRAO,
+  MENSAGEM_ESTRUTURA_SOLICITACAO_WHATSAPP,
 ].join("\n");
 
 type SessaoWhatsappAtiva = {
@@ -119,16 +119,20 @@ async function registrarConversa(dados: {
   });
 }
 
-async function enviarOrientacao(sessaoId: string, telefone: string, conteudo: string): Promise<void> {
-  const envio = await enviarMensagemEvolution({
-    destinatario: telefone,
-    conteudo,
-    tipo: "ORIENTACAO_INICIAL",
-    sessaoWhatsappId: sessaoId,
-  });
+async function enviarOrientacao(sessaoId: string, telefone: string, mensagemConfiguravel: string): Promise<void> {
+  const mensagens = [mensagemConfiguravel, MENSAGEM_ESTRUTURA_SOLICITACAO_WHATSAPP];
 
-  if (!envio.sucesso) {
-    logWarn("enviarOrientacao.whatsapp", { motivo: envio.mensagem });
+  for (const conteudo of mensagens) {
+    const envio = await enviarMensagemEvolution({
+      destinatario: telefone,
+      conteudo,
+      tipo: "ORIENTACAO_INICIAL",
+      sessaoWhatsappId: sessaoId,
+    });
+
+    if (!envio.sucesso) {
+      logWarn("enviarOrientacao.whatsapp", { motivo: envio.mensagem });
+    }
   }
 }
 

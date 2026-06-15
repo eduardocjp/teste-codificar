@@ -34,6 +34,12 @@ describe("env", () => {
 
     expect(obterDatabaseUrl()).toBe("postgresql://usuario:senha@host:5432/app");
   });
+
+  it("obterDatabaseUrl falha sem DATABASE_URL configurada", () => {
+    delete process.env.DATABASE_URL;
+
+    expect(() => obterDatabaseUrl()).toThrow("DATABASE_URL não configurada");
+  });
 });
 
 describe("respostas", () => {

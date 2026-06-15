@@ -1,4 +1,6 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+
+vi.mock("../web/lib/prisma", () => ({ prisma: {} }));
 
 import { ordenarResponsaveisPorCarga } from "../web/services/servico_distribuicao";
 

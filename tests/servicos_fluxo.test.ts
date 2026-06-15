@@ -28,6 +28,8 @@ const responsavelServicoMock = vi.hoisted(() => ({
 
 const distribuicaoMock = vi.hoisted(() => ({
   atribuirChamadoAutomaticamente: vi.fn(),
+  registrarUltimaAtribuicaoResponsavel: vi.fn(),
+  selecionarResponsavelAutomaticamente: vi.fn(),
 }));
 
 vi.mock("../web/modules/intents/repositorio_intencao", () => intencaoRepoMock);
@@ -175,6 +177,7 @@ describe("servico_chamado", () => {
         status: "ABERTO",
         setorId: uuidSetor,
         origem: "MANUAL",
+        atribuicaoAutomatica: true,
       }),
     ).resolves.toMatchObject({ sucesso: false, mensagem: "Setor inválido." });
   });
@@ -203,9 +206,8 @@ describe("servico_chamado", () => {
 
   it("criarChamadoComDistribuicao chama atribuição automática quando solicitado", async () => {
     setorRepoMock.buscarSetorAtivoPorId.mockResolvedValueOnce({ id: uuidSetor });
-    chamadoRepoMock.criarChamado.mockResolvedValueOnce({ id: "chamado", setorId: uuidSetor });
-    distribuicaoMock.atribuirChamadoAutomaticamente.mockResolvedValueOnce({ id: uuidResponsavel });
-    chamadoRepoMock.buscarChamadoPorId.mockResolvedValueOnce({ id: "chamado", responsavelId: uuidResponsavel });
+    distribuicaoMock.selecionarResponsavelAutomaticamente.mockResolvedValueOnce({ id: uuidResponsavel });
+    chamadoRepoMock.criarChamado.mockResolvedValueOnce({ id: "chamado", responsavelId: uuidResponsavel });
 
     await expect(
       criarChamadoComDistribuicao({
@@ -219,7 +221,31 @@ describe("servico_chamado", () => {
       }),
     ).resolves.toEqual({ sucesso: true, dados: { id: "chamado", responsavelId: uuidResponsavel } });
 
-    expect(distribuicaoMock.atribuirChamadoAutomaticamente).toHaveBeenCalledWith("chamado", uuidSetor);
+    expect(distribuicaoMock.selecionarResponsavelAutomaticamente).toHaveBeenCalledWith(uuidSetor);
+    expect(distribuicaoMock.registrarUltimaAtribuicaoResponsavel).toHaveBeenCalledWith(uuidResponsavel);
+  });
+
+  it("criarChamadoComDistribuicao salva sem responsavel quando nao ha atendente na atribuicao automatica", async () => {
+    setorRepoMock.buscarSetorAtivoPorId.mockResolvedValueOnce({ id: uuidSetor });
+    distribuicaoMock.selecionarResponsavelAutomaticamente.mockResolvedValueOnce(null);
+    chamadoRepoMock.criarChamado.mockResolvedValueOnce({ id: "chamado", responsavelId: null });
+
+    await expect(
+      criarChamadoComDistribuicao({
+        titulo: "Notebook nao liga",
+        descricao: "Notebook do financeiro nao liga desde cedo.",
+        prioridade: "ALTA",
+        status: "ABERTO",
+        setorId: uuidSetor,
+        origem: "MANUAL",
+        atribuicaoAutomatica: true,
+      }),
+    ).resolves.toEqual({ sucesso: true, dados: { id: "chamado", responsavelId: null } });
+
+    expect(chamadoRepoMock.criarChamado).toHaveBeenCalledWith(
+      expect.objectContaining({ responsavelId: undefined, atribuicaoAutomatica: true }),
+    );
+    expect(distribuicaoMock.registrarUltimaAtribuicaoResponsavel).not.toHaveBeenCalled();
   });
 
   it("salvarAtualizacaoChamado retorna não encontrado", async () => {

@@ -3,7 +3,10 @@ import type { ResultadoAcao } from "../../types/resultado";
 import type { ChamadoComRelacoes } from "../../types/chamado";
 import { buscarSetorAtivoPorId } from "../setores/repositorio_setor";
 import { validarResponsavelParaSetor } from "../responsaveis/servico_responsavel";
-import { atribuirChamadoAutomaticamente } from "../../services/servico_distribuicao";
+import {
+  registrarUltimaAtribuicaoResponsavel,
+  selecionarResponsavelAutomaticamente,
+} from "../../services/servico_distribuicao";
 import {
   atualizarChamado,
   buscarChamadoPorId,
@@ -68,17 +71,22 @@ export async function criarChamadoComDistribuicao(
     return base;
   }
 
-  const chamado = await criarChamado({
-    ...validacao.data,
-    responsavelId: validacao.data.atribuicaoAutomatica ? undefined : validacao.data.responsavelId,
-  });
-
   if (validacao.data.atribuicaoAutomatica) {
-    await atribuirChamadoAutomaticamente(chamado.id, validacao.data.setorId);
-    const atualizado = await buscarChamadoPorId(chamado.id);
+    const responsavel = await selecionarResponsavelAutomaticamente(validacao.data.setorId);
 
-    return { sucesso: true, dados: atualizado ?? chamado };
+    const chamado = await criarChamado({
+      ...validacao.data,
+      responsavelId: responsavel?.id,
+    });
+
+    if (responsavel) {
+      await registrarUltimaAtribuicaoResponsavel(responsavel.id);
+    }
+
+    return { sucesso: true, dados: chamado };
   }
+
+  const chamado = await criarChamado(validacao.data);
 
   return { sucesso: true, dados: chamado };
 }

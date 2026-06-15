@@ -68,6 +68,19 @@ export function QrCodeConexao({ aberto, onOpenChange, onConectado }: QrCodeConex
   const [segundosQr, setSegundosQr] = useState(0);
   const [segundosBloqueio, setSegundosBloqueio] = useState(0);
 
+  const aplicarDadosConexao = useCallback((dadosAtualizados: DadosConexaoEvolution): void => {
+    setDados(dadosAtualizados);
+    setMensagem(dadosAtualizados.mensagem);
+    setSegundosQr(calcularSegundosRestantes(dadosAtualizados.qrExpiraEm));
+    setSegundosBloqueio(calcularSegundosRestantes(dadosAtualizados.novaTentativaQrEm));
+
+    if (dadosAtualizados.estado === "conectada") {
+      setMensagem("WhatsApp conectado com sucesso.");
+      onConectado();
+      onOpenChange(false);
+    }
+  }, [onConectado, onOpenChange]);
+
   const consultarEstado = useCallback(async (): Promise<void> => {
     const response = await fetch("/api/whatsapp/estado", { method: "GET" });
     const resultado = await lerResposta<DadosConexaoEvolution>(response);
@@ -76,13 +89,8 @@ export function QrCodeConexao({ aberto, onOpenChange, onConectado }: QrCodeConex
       return;
     }
 
-    if (resultado.dados.estado === "conectada") {
-      setDados(resultado.dados);
-      setMensagem("WhatsApp conectado com sucesso.");
-      onConectado();
-      onOpenChange(false);
-    }
-  }, [onConectado, onOpenChange]);
+    aplicarDadosConexao(resultado.dados);
+  }, [aplicarDadosConexao]);
 
   const solicitarQrCode = useCallback(async (): Promise<void> => {
     setCarregando(true);
@@ -98,11 +106,8 @@ export function QrCodeConexao({ aberto, onOpenChange, onConectado }: QrCodeConex
       return;
     }
 
-    setDados(resultado.dados);
-    setMensagem(resultado.dados.mensagem);
-    setSegundosQr(calcularSegundosRestantes(resultado.dados.qrExpiraEm));
-    setSegundosBloqueio(calcularSegundosRestantes(resultado.dados.novaTentativaQrEm));
-  }, []);
+    aplicarDadosConexao(resultado.dados);
+  }, [aplicarDadosConexao]);
 
   useEffect(() => {
     if (!aberto) {
@@ -130,16 +135,16 @@ export function QrCodeConexao({ aberto, onOpenChange, onConectado }: QrCodeConex
   }, [aberto, dados?.novaTentativaQrEm, dados?.qrExpiraEm]);
 
   useEffect(() => {
-    if (!aberto || !dados?.qrcodeBase64 || segundosQr <= 0) {
+    if (!aberto || carregando || dados?.estado === "conectada") {
       return;
     }
 
     const intervalo = window.setInterval(() => {
       void consultarEstado();
-    }, 3000);
+    }, 2000);
 
     return () => window.clearInterval(intervalo);
-  }, [aberto, consultarEstado, dados?.qrcodeBase64, segundosQr]);
+  }, [aberto, carregando, consultarEstado, dados?.estado]);
 
   useEffect(() => {
     if (!aberto || !dados?.qrcodeBase64 || segundosQr > 0) {

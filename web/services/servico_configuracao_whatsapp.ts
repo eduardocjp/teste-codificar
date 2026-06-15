@@ -6,7 +6,6 @@ import { mapearErrosZod } from "../lib/respostas";
 import type { ResultadoAcao } from "../types/resultado";
 import {
   MENSAGEM_PRIMEIRO_CONTATO_PADRAO,
-  mensagemPrimeiroContatoValida,
   normalizarTelefoneWhatsapp,
 } from "./servico_processamento_mensagem";
 
@@ -52,9 +51,6 @@ const schemaAtualizacaoConfiguracaoWhatsapp = z.object({
     .string()
     .trim()
     .min(1, "A mensagem de primeiro contato é obrigatória.")
-    .refine(mensagemPrimeiroContatoValida, {
-      message: "A mensagem deve conter nome, assunto e descrição.",
-    })
     .optional(),
   mensagemConfirmacaoChamado: z
     .string()

@@ -23,6 +23,7 @@ describe("schemas de chamado", () => {
       titulo: "Notebook não liga",
       descricao: "O notebook do financeiro não liga desde cedo.",
       setorId: uuid,
+      responsavelId: "22222222-2222-4222-8222-222222222222",
     });
 
     expect(resultado.prioridade).toBe("MEDIA");

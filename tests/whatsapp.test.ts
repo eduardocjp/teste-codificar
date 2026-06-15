@@ -45,9 +45,9 @@ vi.mock("../web/utils/logger", () => ({
 }));
 
 import {
+  MENSAGEM_ESTRUTURA_SOLICITACAO_WHATSAPP,
   MENSAGEM_PRIMEIRO_CONTATO_PADRAO,
   extrairSolicitacaoWhatsapp,
-  mensagemPrimeiroContatoValida,
 } from "../web/services/servico_processamento_mensagem";
 import {
   obterConfiguracaoWhatsapp,
@@ -70,7 +70,7 @@ function configuracao(overrides: Record<string, unknown> = {}) {
     conectado: true,
     numeroConectado: "5511888888888",
     numeroAviso: null,
-    mensagemPrimeiroContato: "Informe seu nome:\nAssunto:\nDescrição do problema:",
+    mensagemPrimeiroContato: "Olá. Envie as informações solicitadas na próxima mensagem.",
     mensagemConfirmacaoChamado: "Chamado {protocolo} criado para {assunto} no setor {setor}.",
     ultimaSolicitacaoQrEm: null,
     novaTentativaQrEm: null,
@@ -220,7 +220,7 @@ describe("configuração do WhatsApp", () => {
     await salvarConfiguracaoWhatsapp({
       ativo: false,
       numeroAviso: "(11) 98888-7777",
-      mensagemPrimeiroContato: "Informe seu nome:\nAssunto:\nDescrição do problema:",
+      mensagemPrimeiroContato: "Olá. Envie as informações solicitadas na próxima mensagem.",
       mensagemConfirmacaoChamado: "Protocolo {protocolo} criado.",
     });
 
@@ -229,25 +229,25 @@ describe("configuração do WhatsApp", () => {
         data: expect.objectContaining({
           ativo: false,
           numeroAviso: "11988887777",
-          mensagemPrimeiroContato: "Informe seu nome:\nAssunto:\nDescrição do problema:",
+          mensagemPrimeiroContato: "Olá. Envie as informações solicitadas na próxima mensagem.",
           mensagemConfirmacaoChamado: "Protocolo {protocolo} criado.",
         }),
       }),
     );
   });
 
-  it("rejeita mensagem vazia ou sem campos mínimos", async () => {
+  it("rejeita mensagem vazia e aceita mensagem livre configurável", async () => {
     await expect(salvarConfiguracaoWhatsapp({ mensagemPrimeiroContato: "" })).resolves.toMatchObject({ sucesso: false });
     await expect(salvarConfiguracaoWhatsapp({ mensagemPrimeiroContato: "Informe seu nome" })).resolves.toMatchObject({
-      sucesso: false,
+      sucesso: true,
     });
-    expect(mensagemPrimeiroContatoValida("Nome\nAssunto\nDescricao")).toBe(true);
   });
 
-  it("mantém o modelo padrão copiável para orientar o cliente", () => {
-    expect(MENSAGEM_PRIMEIRO_CONTATO_PADRAO).toContain("Copie essa mensagem");
-    expect(MENSAGEM_PRIMEIRO_CONTATO_PADRAO).toContain("Informe seu nome:");
-    expect(MENSAGEM_PRIMEIRO_CONTATO_PADRAO).toContain("------------");
+  it("mantém mensagem padrão configurável e estrutura fixa copiável", () => {
+    expect(MENSAGEM_PRIMEIRO_CONTATO_PADRAO).toContain("próxima mensagem");
+    expect(MENSAGEM_ESTRUTURA_SOLICITACAO_WHATSAPP).toContain("Copie essa mensagem");
+    expect(MENSAGEM_ESTRUTURA_SOLICITACAO_WHATSAPP).toContain("Informe seu nome:");
+    expect(MENSAGEM_ESTRUTURA_SOLICITACAO_WHATSAPP).toContain("------------");
   });
 
   it("rejeita número opcional inválido", async () => {
@@ -293,8 +293,20 @@ describe("fluxo automático por WhatsApp", () => {
       dados: { acao: "orientacao_enviada" },
     });
     expect(chamadoMock.criarChamadoComDistribuicao).not.toHaveBeenCalled();
-    expect(evolutionMock.enviarMensagemEvolution).toHaveBeenCalledWith(
-      expect.objectContaining({ tipo: "ORIENTACAO_INICIAL" }),
+    expect(evolutionMock.enviarMensagemEvolution).toHaveBeenCalledTimes(2);
+    expect(evolutionMock.enviarMensagemEvolution).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({
+        tipo: "ORIENTACAO_INICIAL",
+        conteudo: configuracao().mensagemPrimeiroContato,
+      }),
+    );
+    expect(evolutionMock.enviarMensagemEvolution).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({
+        tipo: "ORIENTACAO_INICIAL",
+        conteudo: MENSAGEM_ESTRUTURA_SOLICITACAO_WHATSAPP,
+      }),
     );
   });
 

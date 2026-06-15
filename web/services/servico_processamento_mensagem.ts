@@ -1,6 +1,11 @@
 import { normalizarTexto } from "../utils/utils";
 
 export const MENSAGEM_PRIMEIRO_CONTATO_PADRAO = [
+  "Olá. Para abrir seu chamado, preciso que você envie as informações no modelo da próxima mensagem.",
+  "Copie a estrutura enviada em seguida e responda preenchendo seus dados.",
+].join("\n");
+
+export const MENSAGEM_ESTRUTURA_SOLICITACAO_WHATSAPP = [
   "Copie essa mensagem e responda com ela no corpo.",
   "",
   "Descreva seu problema desta forma, em uma única mensagem:",
@@ -65,15 +70,6 @@ export function normalizarTelefoneWhatsapp(valor: string | null | undefined): st
   }
 
   return telefone;
-}
-
-/**
- * Verifica se a mensagem de primeiro contato possui os campos mínimos exigidos.
- */
-export function mensagemPrimeiroContatoValida(mensagem: string): boolean {
-  const texto = normalizarTexto(mensagem);
-
-  return texto.includes("nome") && texto.includes("assunto") && texto.includes("descricao");
 }
 
 /**

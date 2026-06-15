@@ -73,7 +73,7 @@ afterEach(() => {
 describe("servico_evolution", () => {
   it("obterStatusEvolution consulta estado da instância padrão", async () => {
     const fetchMock = vi.fn<typeof fetch>()
-      .mockResolvedValueOnce(respostaJson({ instance: { state: "open" } }));
+      .mockResolvedValueOnce(respostaJson({ instance: { state: "OPEN" } }));
     vi.stubGlobal("fetch", fetchMock);
 
     await expect(obterStatusEvolution()).resolves.toMatchObject({

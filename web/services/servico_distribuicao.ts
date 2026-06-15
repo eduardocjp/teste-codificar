@@ -92,3 +92,13 @@ export async function atribuirChamadoAutomaticamente(chamadoId: string, setorId:
 
   return responsavel;
 }
+
+/**
+ * Registra a data da Ãºltima atribuiÃ§Ã£o apÃ³s criaÃ§Ã£o automÃ¡tica jÃ¡ vinculada.
+ */
+export async function registrarUltimaAtribuicaoResponsavel(responsavelId: string, agora = new Date()): Promise<void> {
+  await prisma.usuario.update({
+    where: { id: responsavelId },
+    data: { ultimaAtribuicao: agora },
+  });
+}

@@ -25,6 +25,22 @@ export const schemaCriacaoChamado = z.object({
   solicitanteTelefone: z.string().trim().min(8).max(32).optional().nullable(),
   confiancaIntencao: z.number().min(0).max(1).optional().nullable(),
   origem: z.enum(ORIGENS_CHAMADO).default("MANUAL"),
+}).superRefine((dados, contexto) => {
+  if (!dados.responsavelId && !dados.atribuicaoAutomatica) {
+    contexto.addIssue({
+      code: "custom",
+      path: ["responsavelId"],
+      message: "Selecione um responsável ou utilize a atribuição automática.",
+    });
+  }
+
+  if (dados.responsavelId && dados.atribuicaoAutomatica) {
+    contexto.addIssue({
+      code: "custom",
+      path: ["responsavelId"],
+      message: "Escolha entre a atribuição manual e a atribuição automática.",
+    });
+  }
 });
 
 export const schemaAtualizacaoChamado = z.object({

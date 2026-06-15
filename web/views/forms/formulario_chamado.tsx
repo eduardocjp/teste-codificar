@@ -71,6 +71,14 @@ export function FormularioChamado({ setores, responsaveis, chamado }: Formulario
     setFormulario((atual) => ({ ...atual, [campo]: valor }));
   }
 
+  function alternarAtribuicaoAutomatica(ativada: boolean): void {
+    setFormulario((atual) => ({
+      ...atual,
+      atribuicaoAutomatica: ativada,
+      responsavelId: ativada ? "" : atual.responsavelId,
+    }));
+  }
+
   async function analisarSolicitacao(): Promise<void> {
     setCarregandoAnalise(true);
     setErro(null);
@@ -210,7 +218,7 @@ export function FormularioChamado({ setores, responsaveis, chamado }: Formulario
               id="atribuicaoAutomatica"
               type="checkbox"
               checked={formulario.atribuicaoAutomatica}
-              onChange={(evento) => atualizar("atribuicaoAutomatica", evento.target.checked)}
+              onChange={(evento) => alternarAtribuicaoAutomatica(evento.target.checked)}
               className="size-4"
             />
             <Label htmlFor="atribuicaoAutomatica">Atribuir automaticamente ao atendente com menor carga</Label>
@@ -219,8 +227,8 @@ export function FormularioChamado({ setores, responsaveis, chamado }: Formulario
         {!formulario.atribuicaoAutomatica ? (
           <div className="md:col-span-2">
             <Label htmlFor="responsavelId">Responsável</Label>
-            <select id="responsavelId" value={formulario.responsavelId} onChange={(evento) => atualizar("responsavelId", evento.target.value)} className="mt-2 h-10 w-full rounded-[14px] border border-input bg-transparent px-3 text-sm">
-              <option value="">Sem responsável</option>
+            <select id="responsavelId" value={formulario.responsavelId} onChange={(evento) => atualizar("responsavelId", evento.target.value)} required className="mt-2 h-10 w-full rounded-[14px] border border-input bg-transparent px-3 text-sm">
+              <option value="">Selecione um responsável</option>
               {responsaveisFiltrados.map((responsavel) => (
                 <option key={responsavel.id} value={responsavel.id}>
                   {responsavel.nome}
