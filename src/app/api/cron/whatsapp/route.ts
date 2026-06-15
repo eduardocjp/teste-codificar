@@ -7,8 +7,7 @@ export const dynamic = "force-dynamic";
 /**
  * GET /api/cron/whatsapp
  *
- * A Vercel dispara cron jobs por GET e envia Authorization: Bearer CRON_SECRET
- * quando a variável CRON_SECRET está configurada no projeto.
+ * Mantido para chamadas manuais ou rotinas externas que usem GET.
  */
 export async function GET(request: NextRequest) {
   return controllerCronWhatsapp(request);
@@ -17,7 +16,7 @@ export async function GET(request: NextRequest) {
 /**
  * POST /api/cron/whatsapp
  *
- * Mantido para execução manual por ferramentas como Postman ou curl.
+ * Usado pelo Supabase Cron via pg_net para processar protocolos pendentes.
  */
 export async function POST(request: NextRequest) {
   return controllerCronWhatsapp(request);

@@ -566,6 +566,34 @@ O projeto não utiliza Supabase Auth.
 
 O acesso às tabelas da aplicação ocorre pelo Prisma no servidor.
 
+### Supabase Cron para protocolos do WhatsApp
+
+O envio posterior do protocolo do chamado é agendado no Supabase, usando `pg_cron` e `pg_net`.
+
+A migration `20260614220000_supabase_cron_whatsapp` cria:
+
+* as extensões `pg_cron`, `pg_net` e `supabase_vault`;
+* a função privada `private.disparar_cron_whatsapp()`;
+* o job `teste_codificar_whatsapp_protocolos`, executado a cada 3 minutos.
+
+Antes de depender do job em produção, cadastre estes segredos no **Supabase Vault**:
+
+```sql
+select vault.create_secret('https://teste-codificar.vercel.app', 'teste_codificar_app_url');
+select vault.create_secret('MESMO_VALOR_DO_CRON_SECRET_DA_VERCEL', 'teste_codificar_cron_secret');
+```
+
+O valor `teste_codificar_cron_secret` deve ser igual ao `CRON_SECRET` configurado na Vercel.
+
+O cron chama:
+
+```text
+POST https://teste-codificar.vercel.app/api/cron/whatsapp
+Authorization: Bearer <CRON_SECRET>
+```
+
+Se os segredos ainda não existirem no Vault, a migration continua aplicável, mas o job falhará até que eles sejam configurados.
+
 ---
 
 ## Prisma
@@ -634,6 +662,8 @@ prisma generate && next build
 ```
 
 Depois de alterar variáveis na Vercel, faça um novo deployment.
+
+O projeto não usa Vercel Cron. O agendamento recorrente do WhatsApp é feito pelo Supabase Cron para evitar o limite do plano Hobby da Vercel.
 
 ---
 
@@ -826,6 +856,8 @@ ou:
 Authorization: Bearer <CRON_SECRET>
 ```
 
+Esse endpoint é chamado automaticamente pelo job `teste_codificar_whatsapp_protocolos` criado no Supabase.
+
 ---
 
 ## E-mail inbound futuro
@@ -947,7 +979,7 @@ Antes de qualquer uso real:
 * A entrada por e-mail permanece inativa.
 * Anexos de e-mail não são armazenados.
 * O WhatsApp depende de uma Evolution API externa.
-* O envio de protocolo depende de cron externo ou Vercel Cron.
+* O envio de protocolo depende do Supabase Cron e dos segredos cadastrados no Supabase Vault.
 * Não existe chat em tempo real.
 * O Supabase é uma dependência de infraestrutura para a execução local.
 * O avaliador precisa utilizar suas próprias URLs de banco ou acessar a demonstração publicada.
